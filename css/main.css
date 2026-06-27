@@ -1391,6 +1391,21 @@ input:focus, textarea:focus, select:focus {
 .info-popover strong { color: var(--ink); }
 
 /* ── RESPONSIVE ─────────────────────────────────────────────────── */
+/* ── OFFLINE BANNER ─────────────────────────────────────────────── */
+#offlineBanner {
+  position: sticky;
+  top: 0;
+  z-index: 600;
+  padding: 9px 16px;
+  background: #c97c10;
+  color: white;
+  text-align: center;
+  font-size: .84rem;
+  font-weight: 600;
+  letter-spacing: .01em;
+}
+
+/* ── RESPONSIVE ─────────────────────────────────────────────────── */
 @media (max-width: 768px) {
   .admin-layout { flex-direction: column; height: auto; overflow: visible; }
   .admin-sidebar { width: 100%; flex-direction: row; height: auto; overflow-x: auto; }

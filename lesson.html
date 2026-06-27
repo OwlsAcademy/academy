@@ -16,6 +16,7 @@
         integrity="sha384-nD3dwv4+ZqdYnmZKe/249ImlV04om7xTCcsoSeQYI+RO+XlKPoqAWaJR1M5SJH9p"
         crossorigin="anonymous"></script>
 <script src="js/supabase-client.js"></script>
+<script src="js/offline.js"></script>
 <link rel="stylesheet" href="css/main.css">
 </head>
 <body>
@@ -304,16 +305,26 @@ async function init() {
     return;
   }
 
-  // Fetch lesson
-  const { data: lesson, error } = await sb
-    .from('lessons')
-    .select('id, title, subtitle, level, header_emoji, tabs')
-    .eq('id', LESSON_ID)
-    .maybeSingle();
-
-  if (error || !lesson) {
-    document.body.innerHTML = '<div style="text-align:center;padding:3rem"><h2>Lekcja nie znaleziona</h2><p><a href="index.html">← Wróć</a></p></div>';
-    return;
+  let lesson;
+  if (OWL.Offline.isOnline()) {
+    const { data, error } = await sb
+      .from('lessons')
+      .select('id, title, subtitle, level, header_emoji, tabs')
+      .eq('id', LESSON_ID)
+      .maybeSingle();
+    if (error || !data) {
+      document.body.innerHTML = '<div style="text-align:center;padding:3rem"><h2>Lekcja nie znaleziona</h2><p><a href="index.html">← Wróć</a></p></div>';
+      return;
+    }
+    lesson = data;
+    OWL.Offline.saveLesson(lesson);
+  } else {
+    lesson = OWL.Offline.loadLesson(LESSON_ID);
+    if (!lesson) {
+      document.body.innerHTML = '<div style="text-align:center;padding:3rem"><h2>📵 Lekcja niedostępna offline</h2><p>Otwórz ją po połączeniu z internetem, aby ją pobrać.</p><p><a href="index.html">← Wróć</a></p></div>';
+      return;
+    }
+    OWL.Offline.updateBanner();
   }
 
   // Load progress (if student logged in)

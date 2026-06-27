@@ -1,12 +1,13 @@
 'use strict';
 
-const CACHE = 'owls-academy-v1';
+const CACHE = 'owls-academy-v2';
 
 const PRECACHE = [
   './css/main.css',
   './js/blocks.js',
   './js/srs.js',
   './js/progress.js',
+  './js/offline.js',
   './js/tts.js',
   './js/admin-blocks.js',
   './js/supabase-client.js',

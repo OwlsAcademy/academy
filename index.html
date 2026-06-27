@@ -16,6 +16,7 @@
         integrity="sha384-nD3dwv4+ZqdYnmZKe/249ImlV04om7xTCcsoSeQYI+RO+XlKPoqAWaJR1M5SJH9p"
         crossorigin="anonymous"></script>
 <script src="js/supabase-client.js"></script>
+<script src="js/offline.js"></script>
 <link rel="stylesheet" href="css/main.css">
 </head>
 <body>
@@ -115,23 +116,35 @@ async function loadStudent(code) {
   const errEl = document.getElementById('loginErr');
   errEl.style.display = 'none';
 
+  let found;
   try {
     const { data: students, error } = await sb
       .from('students')
       .select('id, name, code, prefix, last_active, streak_days, xp')
       .ilike('code', code);
     if (error) throw error;
-
-    const found = (students || []).find(s => s.code.toLowerCase() === code.toLowerCase());
-    if (!found) {
-      errEl.textContent = '❌ Nieprawidłowy kod dostępu. Sprawdź pisownię lub skontaktuj się z nauczycielem.';
-      errEl.style.display = 'block';
-      return;
+    found = (students || []).find(s => s.code.toLowerCase() === code.toLowerCase());
+  } catch {
+    // Network failed — try offline cache
+    if (!OWL.Offline.isOnline()) {
+      found = OWL.Offline.loadStudent(code.trim());
     }
+  }
 
-    localStorage.setItem('studentCode', found.code);
-    localStorage.setItem('studentId',   found.id);
-    localStorage.setItem('studentName', found.name);
+  if (!found) {
+    errEl.textContent = OWL.Offline.isOnline()
+      ? '❌ Nieprawidłowy kod dostępu. Sprawdź pisownię lub skontaktuj się z nauczycielem.'
+      : '📵 Offline — nie ma zapisanego kodu. Zaloguj się po połączeniu z siecią.';
+    errEl.style.display = 'block';
+    return;
+  }
+
+  localStorage.setItem('studentCode', found.code);
+  localStorage.setItem('studentId',   found.id);
+  localStorage.setItem('studentName', found.name);
+
+  if (OWL.Offline.isOnline()) {
+    OWL.Offline.saveStudent(found);
 
     // Update streak
     const today = new Date().toISOString().slice(0, 10);
@@ -143,16 +156,16 @@ async function loadStudent(code) {
       const yday = yesterday.toISOString().slice(0, 10);
       if (last === yday) streak++;
       else if (!last || last < yday) streak = 1;
-      await sb.from('students').update({ last_active: today, streak_days: streak })
-              .eq('id', found.id);
+      try {
+        await sb.from('students').update({ last_active: today, streak_days: streak }).eq('id', found.id);
+      } catch {}
     }
-
     found.streak_days = streak;
-    await showDashboard(found);
-  } catch(e) {
-    errEl.textContent = '⚠️ Błąd: ' + e.message;
-    errEl.style.display = 'block';
+  } else {
+    OWL.Offline.updateBanner();
   }
+
+  await showDashboard(found);
 }
 
 // ── DASHBOARD ─────────────────────────────────────────────────────
@@ -164,39 +177,51 @@ async function showDashboard(student) {
   document.getElementById('greetingHdr').innerHTML =
     'Cześć, <span>' + name + '</span>! 👋 Twoje lekcje:';
 
-  // Load assignments
   const sid = student.id || localStorage.getItem('studentId');
-  const { data: asgn } = await sb
-    .from('student_lessons')
-    .select('lesson_id, lesson_order, available_from, due_date, lessons(id, title, subtitle, level, header_emoji, tabs)')
-    .eq('student_id', sid)
-    .order('lesson_order', { ascending: true });
+  const online = OWL.Offline.isOnline();
+  let lessons = [], progressMap = {};
 
-  const now = new Date().toISOString();
-  const lessons = (asgn || [])
-    .filter(a => a.lessons)
-    .map(a => ({
-      id:           a.lessons.id,
-      title:        a.lessons.title,
-      subtitle:     a.lessons.subtitle,
-      level:        a.lessons.level,
-      emoji:        a.lessons.header_emoji || '📖',
-      tabs:         a.lessons.tabs || [],
-      lessonOrder:  a.lesson_order,
-      available:    !a.available_from || a.available_from <= now,
-      dueDate:      a.due_date
-    }));
-
-  // Load progress for all lessons
-  let progressMap = {};
-  if (lessons.length) {
-    const ids = lessons.map(l => l.id);
-    const { data: progs } = await sb
-      .from('lesson_progress')
-      .select('lesson_id, block_progress, srs_data')
+  if (online) {
+    const { data: asgn } = await sb
+      .from('student_lessons')
+      .select('lesson_id, lesson_order, available_from, due_date, lessons(id, title, subtitle, level, header_emoji, tabs)')
       .eq('student_id', sid)
-      .in('lesson_id', ids);
-    (progs || []).forEach(p => { progressMap[p.lesson_id] = p; });
+      .order('lesson_order', { ascending: true });
+
+    const now = new Date().toISOString();
+    lessons = (asgn || [])
+      .filter(a => a.lessons)
+      .map(a => ({
+        id:          a.lessons.id,
+        title:       a.lessons.title,
+        subtitle:    a.lessons.subtitle,
+        level:       a.lessons.level,
+        emoji:       a.lessons.header_emoji || '📖',
+        tabs:        a.lessons.tabs || [],
+        lessonOrder: a.lesson_order,
+        available:   !a.available_from || a.available_from <= now,
+        dueDate:     a.due_date
+      }));
+    OWL.Offline.saveLessons(sid, lessons);
+
+    if (lessons.length) {
+      const ids = lessons.map(l => l.id);
+      const { data: progs } = await sb
+        .from('lesson_progress')
+        .select('lesson_id, block_progress, srs_data')
+        .eq('student_id', sid)
+        .in('lesson_id', ids);
+      (progs || []).forEach(p => {
+        progressMap[p.lesson_id] = p;
+        OWL.Offline.saveProgress(sid, p.lesson_id, p);
+      });
+    }
+  } else {
+    lessons = OWL.Offline.loadLessons(sid) || [];
+    lessons.forEach(l => {
+      const p = OWL.Offline.loadProgress(sid, l.id);
+      if (p) progressMap[l.id] = p;
+    });
   }
 
   // Stats
