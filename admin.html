@@ -1,0 +1,1820 @@
+﻿<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Panel nauczyciela — Owl's Academy</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.108.2/dist/umd/supabase.js"
+        integrity="sha384-nD3dwv4+ZqdYnmZKe/249ImlV04om7xTCcsoSeQYI+RO+XlKPoqAWaJR1M5SJH9p"
+        crossorigin="anonymous"></script>
+<script src="js/supabase-client.js"></script>
+<link rel="stylesheet" href="css/main.css">
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════════════════════
+     LOGIN
+══════════════════════════════════════════════════════════════ -->
+<div id="adminLoginScreen" class="admin-login">
+  <div class="admin-login-box">
+    <div style="font-size:2.5rem;margin-bottom:.5rem">🦉</div>
+    <h1>Panel nauczyciela</h1>
+    <p>Zaloguj się kontem Supabase (email + hasło)</p>
+    <div class="field"><label>Email</label>
+      <input type="email" id="loginEmail" placeholder="nauczyciel@example.com"></div>
+    <div class="field"><label>Hasło</label>
+      <input type="password" id="loginPass" placeholder="••••••••""></div>
+    <button class="btn btn-primary" id="loginAdminBtn" style="width:100%;margin-top:.5rem">Zaloguj się →</button>
+    <div id="loginAdminErr" style="color:var(--coral);font-size:.84rem;margin-top:.7rem;display:none"></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════
+     MAIN APP
+══════════════════════════════════════════════════════════════ -->
+<div id="adminApp" class="admin-layout" style="display:none">
+
+  <!-- SIDEBAR -->
+  <aside class="admin-sidebar">
+    <div class="sidebar-logo">
+      <span>🦉</span>
+      <h2>Owl's Academy</h2>
+      <p>Panel nauczyciela</p>
+    </div>
+    <nav class="sidebar-nav">
+      <button class="nav-item active" data-section="builder">
+        <span class="ni-icon">✏️</span> Edytor lekcji
+      </button>
+      <button class="nav-item" data-section="lessons">
+        <span class="ni-icon">📋</span> Lista lekcji
+      </button>
+      <button class="nav-item" data-section="students">
+        <span class="ni-icon">👥</span> Uczniowie
+      </button>
+      <button class="nav-item" data-section="progress">
+        <span class="ni-icon">📈</span> Postępy
+      </button>
+      <button class="nav-item" data-section="settings">
+        <span class="ni-icon">⚙️</span> Ustawienia
+      </button>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="admin-email" id="adminEmailDisplay"></div>
+      <button class="logout-btn-sm" id="adminLogoutBtn">Wyloguj</button>
+    </div>
+  </aside>
+
+  <!-- MAIN CONTENT -->
+  <main class="admin-main">
+
+    <!-- ── LESSON BUILDER ── -->
+    <section class="admin-section active" id="sectionBuilder">
+      <div class="admin-section-hdr">
+        <h2>✏️ Edytor lekcji</h2>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn btn-ghost btn-sm" id="newLessonBtn">+ Nowa lekcja</button>
+          <button class="btn btn-ghost btn-sm" id="importJsonBtn">⬆ Importuj JSON</button>
+          <button class="btn btn-ghost btn-sm" id="aiGenBtn">🦉 Generuj AI</button>
+          <button class="btn btn-ghost btn-sm" id="previewBtn">🦉 Podgląd</button>
+          <button class="btn btn-ghost btn-sm" id="exportJsonBtn">⬇ Eksportuj JSON</button>
+          <button class="btn btn-primary btn-sm" id="saveLessonBtn">💾 Zapisz lekcję</button>
+        </div>
+      </div>
+
+      <!-- Metadata -->
+      <div class="admin-card">
+        <h3>Informacje o lekcji</h3>
+        <div class="two-field">
+          <div class="field"><label>Tytuł</label>
+            <input type="text" id="lessonTitle" placeholder="np. Health & The Human Body"></div>
+          <div class="field"><label>Podtytuł</label>
+            <input type="text" id="lessonSubtitle" placeholder="np. Body parts · Present Simple"></div>
+        </div>
+        <div class="two-field">
+          <div class="field"><label>Poziom</label>
+            <select id="lessonLevel">
+              <option value="">— wybierz —</option>
+              <option>A1</option><option>A2</option><option>B1</option>
+              <option>B2</option><option>C1</option><option>C2</option>
+            </select></div>
+          <div class="field"><label>Emoji nagłówka</label>
+            <input type="text" id="lessonEmoji" placeholder="📖" maxlength="4"></div>
+        </div>
+        <div class="two-field">
+          <div class="field"><label>Nauczany język</label>
+            <select id="lessonTargetLang">
+              <option value="en">🇬🇧 Angielski</option>
+              <option value="pl">🇵🇱 Polski</option>
+              <option value="de">🇩🇪 Niemiecki</option>
+              <option value="fr">🇫🇷 Francuski</option>
+              <option value="es">🇪🇸 Hiszpański</option>
+              <option value="it">🇮🇹 Włoski</option>
+              <option value="cs">🇨🇿 Czeski</option>
+              <option value="sk">🇸🇰 Słowacki</option>
+              <option value="ru">🇷🇺 Rosyjski</option>
+              <option value="uk">🇺🇦 Ukraiński</option>
+              <option value="nl">🇳🇱 Niderlandzki</option>
+              <option value="sv">🇸🇪 Szwedzki</option>
+              <option value="nb">🇳🇴 Norweski</option>
+              <option value="da">🇩🇰 Duński</option>
+              <option value="fi">🇫🇮 Fiński</option>
+              <option value="pt">🇵🇹 Portugalski</option>
+              <option value="tr">🇹🇷 Turecki</option>
+              <option value="ar">🇸🇦 Arabski</option>
+              <option value="zh">🇨🇳 Chiński</option>
+              <option value="ja">🇯🇵 Japoński</option>
+            </select></div>
+          <div class="field"><label>Język instrukcji</label>
+            <select id="lessonInstructionLang">
+              <option value="pl">🇵🇱 Polski</option>
+              <option value="en">🇬🇧 Angielski</option>
+              <option value="de">🇩🇪 Niemiecki</option>
+              <option value="fr">🇫🇷 Francuski</option>
+              <option value="es">🇪🇸 Hiszpański</option>
+              <option value="it">🇮🇹 Włoski</option>
+              <option value="ru">🇷🇺 Rosyjski</option>
+              <option value="uk">🇺🇦 Ukraiński</option>
+            </select></div>
+        </div>
+        <div style="font-size:.8rem;color:var(--ink-60)">
+          ID lekcji: <span id="lessonIdDisplay" style="font-family:var(--font-mono)">— nowa lekcja —</span>
+        </div>
+      </div>
+
+      <!-- Tab manager + block editors (rendered by JS) -->
+      <div class="admin-card">
+        <h3>Zakładki i bloki</h3>
+        <div id="tabManagerArea"></div>
+        <div id="tabEditorArea"></div>
+      </div>
+    </section>
+
+    <!-- ── LESSON LIST ── -->
+    <section class="admin-section" id="sectionLessons">
+      <div class="admin-section-hdr">
+        <h2>🦉 Lista lekcji</h2>
+        <button class="btn btn-primary btn-sm" id="newLessonFromListBtn">+ Nowa lekcja</button>
+      </div>
+      <div class="admin-card">
+        <div style="margin-bottom:1rem">
+          <input type="text" id="lessonSearch" placeholder="🔍 Szukaj po tytule..."
+                 style="padding:9px 12px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:.9rem;width:100%">
+        </div>
+        <div id="lessonIndexList"></div>
+      </div>
+    </section>
+
+    <!-- ── STUDENTS ── -->
+    <section class="admin-section" id="sectionStudents">
+      <div class="admin-section-hdr">
+        <h2>👥 Uczniowie</h2>
+        <button class="btn btn-primary btn-sm" id="addStudentBtn">+ Dodaj ucznia</button>
+      </div>
+      <div class="admin-card">
+        <table class="student-table" id="studentTable">
+          <thead><tr>
+            <th>Imię</th><th>Kod dostępu</th><th>Prefix</th>
+            <th>Streak</th><th>XP</th><th>Lekcje</th><th>Akcje</th>
+          </tr></thead>
+          <tbody id="studentTableBody"></tbody>
+        </table>
+      </div>
+
+      <!-- Assign lessons -->
+      <div class="admin-card" id="assignCard" style="display:none">
+        <h3>🦉 Przypisz lekcje — <span id="assignStudentName"></span></h3>
+        <div id="assignLessonsList"></div>
+        <button class="btn btn-primary" style="margin-top:1rem" id="saveAssignBtn">Zapisz przypisania</button>
+      </div>
+    </section>
+
+    <!-- ── PROGRESS ── -->
+    <section class="admin-section" id="sectionProgress">
+      <div class="admin-section-hdr">
+        <h2>🦉 Postępy uczniów</h2>
+      </div>
+      <div class="admin-card">
+        <div class="two-field" style="margin-bottom:1rem">
+          <div class="field"><label>Uczeń</label>
+            <select id="progressStudentFilter"><option value="">— wybierz ucznia —</option></select></div>
+          <div class="field"><label>Lekcja</label>
+            <select id="progressLessonFilter"><option value="">— wybierz lekcję —</option></select></div>
+        </div>
+        <button class="btn btn-primary btn-sm" id="loadProgressBtn">Załaduj postęp</button>
+      </div>
+      <div id="progressDisplay"></div>
+    </section>
+
+    <!-- ── SETTINGS ── -->
+    <section class="admin-section" id="sectionSettings">
+      <div class="admin-section-hdr"><h2>⚙️ Ustawienia</h2></div>
+
+      <div class="admin-card">
+        <h3>🦉 Integracja AI (Claude API)</h3>
+        <div class="config-info">Klucz API jest przechowywany w bazie danych (tabela config), nie w kodzie źródłowym.</div>
+        <div class="field"><label>Anthropic API Key</label>
+          <input type="password" id="cfgAnthropicKey" placeholder="sk-ant-..."></div>
+        <button class="btn btn-primary btn-sm" id="saveCfgAi">Zapisz</button>
+      </div>
+
+      <div class="admin-card">
+        <h3>🦉 EmailJS (wysyłanie wyników)</h3>
+        <div class="two-field">
+          <div class="field"><label>Public Key</label>
+            <input type="text" id="cfgEmailPublic" placeholder="user_..."></div>
+          <div class="field"><label>Service ID</label>
+            <input type="text" id="cfgEmailService" placeholder="service_..."></div>
+        </div>
+        <div class="two-field">
+          <div class="field"><label>Template ID</label>
+            <input type="text" id="cfgEmailTemplate" placeholder="template_..."></div>
+          <div class="field"><label>Do (email)</label>
+            <input type="email" id="cfgEmailTo" placeholder="teacher@example.com"></div>
+        </div>
+        <button class="btn btn-primary btn-sm" id="saveCfgEmail">Zapisz</button>
+      </div>
+
+      <div class="admin-card">
+        <h3>📝 Prompt generatora AI</h3>
+        <div class="config-info">
+          Zmienne dostępne w szablonie:
+          <code>{{TARGET_LANG_NAME}}</code> <code>{{INSTRUCTION_LANG_NAME}}</code>
+          <code>{{TARGET_LANG}}</code> <code>{{INSTRUCTION_LANG}}</code>
+          <code>{{LEVEL}}</code> <code>{{DURATION}}</code>
+          <code>{{TOPIC}}</code> <code>{{REQUIREMENTS}}</code> —
+          <code>{{Q_INTRO_ART}}</code> <code>{{Q_GLOSSARY}}</code> <code>{{Q_DISCUSS}}</code>
+          <code>{{Q_COMPREH}}</code> <code>{{Q_VOCAB_GRID}}</code> <code>{{Q_VOCAB_TABLE}}</code>
+          <code>{{Q_PHRASES}}</code> <code>{{Q_GR_BLOCKS}}</code> <code>{{Q_EXAMPLES}}</code>
+          <code>{{Q_READ_WORDS}}</code> <code>{{Q_READ_HL}}</code> <code>{{Q_READ_VOCAB}}</code>
+          <code>{{Q_READ_COMPR}}</code> <code>{{Q_QUIZ}}</code> <code>{{Q_FILL}}</code>
+          <code>{{Q_TRANSL}}</code> <code>{{Q_SPEAK_CONV}}</code> <code>{{Q_SPEAK_Q}}</code>
+          <code>{{Q_CARDS}}</code> <code>{{Q_HW_TASKS}}</code> <code>{{Q_HW_CHECK}}</code> —
+          <code>{{TAB_INTRO}}</code> <code>{{TAB_VOCAB}}</code> <code>{{TAB_GRAMMAR}}</code>
+          <code>{{TAB_READING}}</code> <code>{{TAB_EXERCISES}}</code> <code>{{TAB_SPEAKING}}</code>
+          <code>{{TAB_FLASHCARDS}}</code> <code>{{TAB_HOMEWORK}}</code>
+        </div>
+        <textarea id="cfgAiPrompt" rows="24"
+          style="font-family:var(--font-mono,monospace);font-size:.78rem;width:100%;resize:vertical;border:1px solid var(--border);border-radius:8px;padding:.75rem;margin-top:.75rem;box-sizing:border-box"></textarea>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
+          <button class="btn btn-primary btn-sm" id="saveCfgPrompt">Zapisz prompt</button>
+          <button class="btn btn-ghost btn-sm" id="exportPromptBtn">⬇ Eksportuj .txt</button>
+          <button class="btn btn-ghost btn-sm" id="importPromptBtn">⬆ Importuj .txt</button>
+          <input type="file" id="importPromptFile" accept=".txt,.md" style="display:none">
+          <button class="btn btn-ghost btn-sm" id="resetPromptBtn">↺ Resetuj do domyślnego</button>
+        </div>
+      </div>
+    </section>
+
+  </main><!-- /admin-main -->
+</div><!-- /adminApp -->
+
+<!-- ══════════════════════════════════════════════════════════════
+     MODALS
+══════════════════════════════════════════════════════════════ -->
+
+<!-- Preview overlay -->
+<div class="preview-overlay" id="previewOverlay">
+  <button class="preview-close" id="previewCloseBtn">✕ Zamknij podgląd</button>
+  <div id="previewContent"></div>
+</div>
+
+<!-- AI Generator modal -->
+<div class="modal-overlay" id="aiModal">
+  <div class="modal-box">
+    <h3>🦉 Generator lekcji AI</h3>
+    <div class="two-field">
+      <div class="field"><label>Nauczany język</label>
+        <select id="aiTargetLang">
+          <option value="en">🇬🇧 Angielski</option>
+          <option value="pl">🇵🇱 Polski</option>
+          <option value="de">🇩🇪 Niemiecki</option>
+          <option value="fr">🇫🇷 Francuski</option>
+          <option value="es">🇪🇸 Hiszpański</option>
+          <option value="it">🇮🇹 Włoski</option>
+          <option value="cs">🇨🇿 Czeski</option>
+          <option value="sk">🇸🇰 Słowacki</option>
+          <option value="ru">🇷🇺 Rosyjski</option>
+          <option value="uk">🇺🇦 Ukraiński</option>
+          <option value="nl">🇳🇱 Niderlandzki</option>
+          <option value="sv">🇸🇪 Szwedzki</option>
+          <option value="pt">🇵🇹 Portugalski</option>
+          <option value="tr">🇹🇷 Turecki</option>
+          <option value="zh">🇨🇳 Chiński</option>
+          <option value="ja">🇯🇵 Japoński</option>
+        </select></div>
+      <div class="field"><label>Język instrukcji</label>
+        <select id="aiInstructionLang">
+          <option value="pl">🇵🇱 Polski</option>
+          <option value="en">🇬🇧 Angielski</option>
+          <option value="de">🇩🇪 Niemiecki</option>
+          <option value="fr">🇫🇷 Francuski</option>
+          <option value="es">🇪🇸 Hiszpański</option>
+          <option value="it">🇮🇹 Włoski</option>
+          <option value="ru">🇷🇺 Rosyjski</option>
+          <option value="uk">🇺🇦 Ukraiński</option>
+        </select></div>
+    </div>
+    <div class="two-field">
+      <div class="field"><label>Poziom</label>
+        <select id="aiLevel">
+          <option>A1</option><option>A2</option><option>B1</option>
+          <option>B2</option><option>C1</option><option>C2</option>
+        </select></div>
+      <div class="field"><label>Długość</label>
+        <select id="aiDuration">
+          <option value="30">30 minut</option>
+          <option value="45">45 minut</option>
+          <option value="60" selected>60 minut</option>
+          <option value="90">90 minut</option>
+        </select></div>
+    </div>
+    <div class="field"><label>Temat lekcji</label>
+      <input type="text" id="aiTopic" placeholder="np. Zdrowie i wizyta u lekarza"></div>
+    <div class="field"><label>Specjalne wymagania (opcjonalne)</label>
+      <textarea id="aiRequirements" rows="2" placeholder="np. Skupić się na słownictwie medycznym, więcej ćwiczeń gramatycznych"></textarea></div>
+    <div id="aiDirectSection">
+      <div style="font-size:.82rem;color:var(--ink-60);margin-bottom:.5rem">
+        Klucz API Anthropic wykryty — możliwe bezpośrednio — rednie generowanie.
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-primary" id="aiDirectBtn">⚡ Generuj bezpośrednio</button>
+      <button class="btn btn-ghost" id="aiCopyPromptBtn">📋 Kopiuj prompt</button>
+      <button class="btn btn-ghost" id="aiModalCloseBtn">Anuluj</button>
+    </div>
+    <div id="aiStatus" style="margin-top:1rem;font-size:.86rem;color:var(--ink-60);display:none"></div>
+  </div>
+</div>
+
+<!-- Import JSON modal -->
+<div class="modal-overlay" id="importModal">
+  <div class="modal-box">
+    <h3>⬆ Importuj JSON lekcji</h3>
+    <div class="json-drop-zone" id="jsonDropZone">
+      <div style="font-size:2rem">📂</div>
+      <p>Przeciągnij plik JSON lub kliknij żeby wybrać</p>
+    </div>
+    <div class="field"><label>Lub wklej JSON bezpośrednio</label>
+      <textarea id="jsonPasteArea" rows="6" placeholder='{"title":"...","tabs":[...]}'></textarea></div>
+    <div class="modal-actions">
+      <button class="btn btn-primary" id="importConfirmBtn">Importuj i załaduj</button>
+      <button class="btn btn-ghost" id="importCancelBtn">Anuluj</button>
+    </div>
+    <div id="importErr" style="color:var(--coral);font-size:.84rem;margin-top:.5rem;display:none"></div>
+  </div>
+</div>
+
+<!-- Add student modal -->
+<div class="modal-overlay" id="studentModal">
+  <div class="modal-box">
+    <h3 id="studentModalTitle">Dodaj ucznia</h3>
+    <input type="hidden" id="editStudentId">
+    <div class="field"><label>Imię i nazwisko</label>
+      <input type="text" id="studentName" placeholder="np. Anna Kowalska"></div>
+    <div class="two-field">
+      <div class="field"><label>Kod dostępu</label>
+        <input type="text" id="studentCode" placeholder="np. anna2024" autocapitalize="none"></div>
+      <div class="field"><label>Prefix (opcjonalny)</label>
+        <input type="text" id="studentPrefix" placeholder="np. Pan/Pani"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-primary" id="saveStudentBtn">Zapisz</button>
+      <button class="btn btn-ghost" id="studentModalCancelBtn">Anuluj</button>
+    </div>
+    <div id="studentErr" style="color:var(--coral);font-size:.84rem;margin-top:.5rem;display:none"></div>
+  </div>
+</div>
+
+<!-- Toast container (rendered dynamically) -->
+
+<script src="js/tts.js"></script>
+<script src="js/srs.js"></script>
+<script src="js/progress.js"></script>
+<script src="js/blocks.js"></script>
+<script src="js/admin-blocks.js"></script>
+<script>
+'use strict';
+window.OWL = window.OWL || {};
+
+// ── HELPERS ──────────────────────────────────────────────────────
+function el(tag, cls, text) {
+  const e = document.createElement(tag);
+  if (cls) e.className = cls;
+  if (text != null) e.textContent = text;
+  return e;
+}
+
+function showToast(msg, type) {
+  const t = document.createElement('div');
+  t.className = 'toast' + (type ? ' ' + type : '');
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 3200);
+}
+
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2); }
+
+// ── NAV ──────────────────────────────────────────────────────────
+document.querySelectorAll('.nav-item[data-section]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.admin-section').forEach(s => s.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('section' + capitalize(btn.dataset.section)).classList.add('active');
+    if (btn.dataset.section === 'lessons') renderLessonIndex();
+    if (btn.dataset.section === 'students') renderStudents();
+    if (btn.dataset.section === 'progress') populateProgressFilters();
+    if (btn.dataset.section === 'settings') loadSettings();
+  });
+});
+
+function capitalize(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
+
+// ── LESSON STATE ─────────────────────────────────────────────────
+let currentLessonId = null;
+let lessonTabs = [];   // [{id, name, icon, blocks:[]}]
+let aiPromptTemplate = null;  // loaded from DB; null = use default
+
+const LANG_LOCALES = {
+  en:'en-GB', pl:'pl-PL', de:'de-DE', fr:'fr-FR', es:'es-ES', it:'it-IT',
+  cs:'cs-CZ', sk:'sk-SK', ru:'ru-RU', uk:'uk-UA', nl:'nl-NL', sv:'sv-SE',
+  nb:'nb-NO', da:'da-DK', fi:'fi-FI', pt:'pt-PT', tr:'tr-TR', ar:'ar-SA',
+  zh:'zh-CN', ja:'ja-JP'
+};
+const LANG_NAMES = {
+  en:'Angielski', pl:'Polski', de:'Niemiecki', fr:'Francuski', es:'Hiszpański',
+  it:'Włoski', cs:'Czeski', sk:'Słowacki', ru:'Rosyjski', uk:'Ukraiński',
+  nl:'Niderlandzki', sv:'Szwedzki', nb:'Norweski', da:'Duński', fi:'Fiński',
+  pt:'Portugalski', tr:'Turecki', ar:'Arabski', zh:'Chiński', ja:'Japoński'
+};
+function langToLocale(code) { return LANG_LOCALES[code] || 'en-GB'; }
+function langName(code) { return LANG_NAMES[code] || code; }
+
+function getMetadata() {
+  return {
+    title:            document.getElementById('lessonTitle').value.trim(),
+    subtitle:         document.getElementById('lessonSubtitle').value.trim(),
+    level:            document.getElementById('lessonLevel').value,
+    header_emoji:     document.getElementById('lessonEmoji').value.trim(),
+    target_lang:      document.getElementById('lessonTargetLang').value,
+    instruction_lang: document.getElementById('lessonInstructionLang').value
+  };
+}
+
+function setMetadata(lesson) {
+  document.getElementById('lessonTitle').value            = lesson.title || '';
+  document.getElementById('lessonSubtitle').value         = lesson.subtitle || '';
+  document.getElementById('lessonLevel').value            = lesson.level || '';
+  document.getElementById('lessonEmoji').value            = lesson.header_emoji || '';
+  document.getElementById('lessonTargetLang').value       = lesson.target_lang || 'en';
+  document.getElementById('lessonInstructionLang').value  = lesson.instruction_lang || 'pl';
+  document.getElementById('lessonIdDisplay').textContent = lesson.id || '— nowa lekcja —';
+  currentLessonId = lesson.id || null;
+}
+
+function newLesson() {
+  currentLessonId = null;
+  lessonTabs = defaultTabs();
+  document.getElementById('lessonTitle').value           = '';
+  document.getElementById('lessonSubtitle').value        = '';
+  document.getElementById('lessonLevel').value           = '';
+  document.getElementById('lessonEmoji').value           = '';
+  document.getElementById('lessonTargetLang').value      = 'en';
+  document.getElementById('lessonInstructionLang').value = 'pl';
+  document.getElementById('lessonIdDisplay').textContent = '— nowa lekcja —';
+  renderTabManager();
+  showBuilderSection();
+}
+
+function defaultTabs() {
+  return [
+    { id: uid(), name: 'Introduction', icon: '📖', blocks: [] },
+    { id: uid(), name: 'Vocabulary',   icon: '🦉', blocks: [] },
+    { id: uid(), name: 'Grammar',      icon: '🦉', blocks: [] },
+    { id: uid(), name: 'Reading',      icon: '🦉', blocks: [] },
+    { id: uid(), name: 'Exercises',    icon: '✏️', blocks: [] },
+    { id: uid(), name: 'Speaking',     icon: '🦉', blocks: [] },
+    { id: uid(), name: 'Flashcards',   icon: '🃏', blocks: [] },
+    { id: uid(), name: 'Homework',     icon: '📝', blocks: [] }
+  ];
+}
+
+function showBuilderSection() {
+  document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.admin-section').forEach(s => s.classList.remove('active'));
+  document.querySelector('.nav-item[data-section="builder"]').classList.add('active');
+  document.getElementById('sectionBuilder').classList.add('active');
+}
+
+// ── TAB MANAGER ───────────────────────────────────────────────────
+let activeAdminTabId = null;
+
+function renderTabManager() {
+  const area = document.getElementById('tabManagerArea');
+  area.textContent = '';
+
+  const mgr = el('div', 'tab-manager');
+
+  lessonTabs.forEach((tab, ti) => {
+    const pill = el('div', 'tab-pill' + (tab.id === activeAdminTabId ? ' active' : ''));
+    pill.draggable = true;
+    pill.dataset.tabId = tab.id;
+
+    const handle = el('span', 'tab-handle', '⠿');
+    const iconEl = document.createElement('input');
+    iconEl.type = 'text';
+    iconEl.value = tab.icon || '';
+    iconEl.maxLength = 4;
+    iconEl.className = 'tp-icon';
+    iconEl.style.cssText = 'width:24px;border:none;background:transparent;font-size:.85rem;padding:0;cursor:text';
+    iconEl.addEventListener('change', () => { tab.icon = iconEl.value; });
+
+    const nameEl = document.createElement('input');
+    nameEl.type = 'text';
+    nameEl.value = tab.name || '';
+    nameEl.className = 'tp-name';
+    nameEl.style.cssText = 'border:none;background:transparent;font-size:.88rem;font-weight:600;min-width:60px;max-width:120px;padding:0;cursor:text;font-family:var(--font-sans)';
+    nameEl.addEventListener('change', () => { tab.name = nameEl.value; renderTabManager(); });
+    nameEl.addEventListener('click', e => e.stopPropagation());
+
+    const delBtn = el('span', 'tp-del', '✕');
+    delBtn.title = 'Usuń zakładkę';
+    delBtn.addEventListener('click', e => {
+      e.stopPropagation();
+      if (lessonTabs.length <= 1) return showToast('Minimum jedna zakładka.', '');
+      lessonTabs.splice(ti, 1);
+      if (activeAdminTabId === tab.id) activeAdminTabId = lessonTabs[0]?.id || null;
+      renderTabManager(); renderTabEditor();
+    });
+
+    pill.appendChild(handle);
+    pill.appendChild(iconEl);
+    pill.appendChild(nameEl);
+    pill.appendChild(delBtn);
+
+    pill.addEventListener('click', () => {
+      activeAdminTabId = tab.id;
+      renderTabManager();
+      renderTabEditor();
+    });
+
+    // Drag & drop to reorder tabs
+    pill.addEventListener('dragstart', e => { e.dataTransfer.setData('tabId', tab.id); pill.classList.add('dragging'); });
+    pill.addEventListener('dragend',   () => pill.classList.remove('dragging'));
+    pill.addEventListener('dragover',  e => { e.preventDefault(); pill.classList.add('drag-over'); });
+    pill.addEventListener('dragleave', () => pill.classList.remove('drag-over'));
+    pill.addEventListener('drop', e => {
+      e.preventDefault(); pill.classList.remove('drag-over');
+      const fromId = e.dataTransfer.getData('tabId');
+      if (fromId === tab.id) return;
+      const fromIdx = lessonTabs.findIndex(t => t.id === fromId);
+      const toIdx   = ti;
+      const [moved] = lessonTabs.splice(fromIdx, 1);
+      lessonTabs.splice(toIdx, 0, moved);
+      renderTabManager(); renderTabEditor();
+    });
+
+    mgr.appendChild(pill);
+  });
+
+  const addBtn = el('button', 'add-tab-btn', '+ Dodaj zakładkę');
+  addBtn.addEventListener('click', () => {
+    const tab = { id: uid(), name: 'Nowa zakładka', icon: '🦉', blocks: [] };
+    lessonTabs.push(tab);
+    activeAdminTabId = tab.id;
+    renderTabManager(); renderTabEditor();
+  });
+  mgr.appendChild(addBtn);
+  area.appendChild(mgr);
+
+  if (!activeAdminTabId && lessonTabs.length > 0) activeAdminTabId = lessonTabs[0].id;
+  renderTabEditor();
+}
+
+// ── TAB EDITOR ────────────────────────────────────────────────────
+function renderTabEditor() {
+  const area = document.getElementById('tabEditorArea');
+  area.textContent = '';
+
+  const tab = lessonTabs.find(t => t.id === activeAdminTabId);
+  if (!tab) return;
+
+  const hdr = el('h4', null, (tab.icon ? tab.icon + ' ' : '') + (tab.name || 'Zakładka'));
+  hdr.style.cssText = 'font-size:1rem;margin-bottom:1rem;color:var(--ink)';
+  area.appendChild(hdr);
+
+  // Block picker
+  if (OWL.AdminBlocks) {
+    const picker = OWL.AdminBlocks.renderBlockPicker(type => {
+      const block = OWL.AdminBlocks.newBlock(type);
+      tab.blocks.push(block);
+      renderTabEditor();
+    });
+    area.appendChild(picker);
+  }
+
+  // Block list
+  const blockList = el('div', null);
+  blockList.id = 'blockList-' + tab.id;
+  renderBlockList(tab, blockList);
+  area.appendChild(blockList);
+}
+
+function renderBlockList(tab, container) {
+  container.textContent = '';
+  if (!tab.blocks.length) {
+    const empty = el('p', null, 'Brak bloków. Użyj pickera powyżej żeby dodać pierwszy blok.');
+    empty.style.cssText = 'color:var(--ink-60);font-size:.86rem;padding:1rem 0';
+    container.appendChild(empty);
+    return;
+  }
+
+  if (!OWL.AdminBlocks) return;
+
+  tab.blocks.forEach((block, bi) => {
+    const wrapper = document.createElement('div');
+    wrapper.dataset.blockId = block.id;
+
+    const editorEl = OWL.AdminBlocks.renderEditor(
+      block,
+      updatedBlock => {
+        // Block data changed
+        tab.blocks[bi] = updatedBlock;
+      },
+      () => {
+        // Delete
+        tab.blocks.splice(bi, 1);
+        renderBlockList(tab, container);
+      }
+    );
+
+    // Drag & drop for block reordering
+    if (editorEl) {
+      editorEl.draggable = true;
+      editorEl.addEventListener('dragstart', e => {
+        e.dataTransfer.setData('blockId', block.id);
+        e.stopPropagation();
+        editorEl.style.opacity = '0.4';
+      });
+      editorEl.addEventListener('dragend',  () => { editorEl.style.opacity = ''; });
+      editorEl.addEventListener('dragover', e => { e.preventDefault(); e.stopPropagation(); editorEl.classList.add('drag-over'); });
+      editorEl.addEventListener('dragleave',() => editorEl.classList.remove('drag-over'));
+      editorEl.addEventListener('drop', e => {
+        e.preventDefault(); e.stopPropagation();
+        editorEl.classList.remove('drag-over');
+        const fromId = e.dataTransfer.getData('blockId');
+        if (!fromId || fromId === block.id) return;
+        const fromIdx = tab.blocks.findIndex(b => b.id === fromId);
+        const toIdx   = bi;
+        if (fromIdx === -1) return;
+        const [moved] = tab.blocks.splice(fromIdx, 1);
+        tab.blocks.splice(toIdx, 0, moved);
+        renderBlockList(tab, container);
+      });
+      wrapper.appendChild(editorEl);
+    }
+    container.appendChild(wrapper);
+  });
+}
+
+// ── SAVE LESSON ───────────────────────────────────────────────────
+async function saveLesson() {
+  const meta = getMetadata();
+  if (!meta.title) return showToast('Wpisz tytuł lekcji.', 'error');
+
+  const payload = {
+    title:        meta.title,
+    subtitle:     meta.subtitle,
+    level:        meta.level,
+    header_emoji: meta.header_emoji,
+    tabs:         lessonTabs
+  };
+
+  try {
+    if (currentLessonId) {
+      const { error } = await sb.from('lessons').update(payload).eq('id', currentLessonId);
+      if (error) throw error;
+      showToast('Lekcja zapisana ✓', 'success');
+    } else {
+      const { data, error } = await sb.from('lessons').insert(payload).select('id').single();
+      if (error) throw error;
+      currentLessonId = data.id;
+      document.getElementById('lessonIdDisplay').textContent = data.id;
+      showToast('Lekcja utworzona ✓', 'success');
+    }
+  } catch(e) {
+    showToast('Błąd zapisu: ' + e.message, 'error');
+  }
+}
+
+// ── LESSON INDEX ─────────────────────────────────────────────────
+async function renderLessonIndex() {
+  const list = document.getElementById('lessonIndexList');
+  list.textContent = '';
+  list.appendChild(el('p', null, 'Ładowanie...'));
+
+  const { data: lessons, error } = await sb
+    .from('lessons')
+    .select('id, title, subtitle, level, header_emoji, created_at')
+    .order('created_at', { ascending: false });
+
+  list.textContent = '';
+  if (error) { list.appendChild(el('p', null, 'Błąd: ' + error.message)); return; }
+  if (!lessons || !lessons.length) { list.appendChild(el('p', null, 'Brak lekcji.')); return; }
+
+  const query = () => document.getElementById('lessonSearch').value.toLowerCase();
+
+  function drawList(items) {
+    list.textContent = '';
+    items.forEach(lesson => {
+      const row = el('div', 'lesson-index-item');
+      row.appendChild(el('div', 'lii-emoji', lesson.header_emoji || '🦉'));
+      const info = el('div', 'lii-info');
+      info.appendChild(el('div', 'lii-title', lesson.title || '(bez tytułu)'));
+      info.appendChild(el('div', 'lii-meta', [lesson.level, lesson.subtitle].filter(Boolean).join(' · ')));
+      row.appendChild(info);
+      const actions = el('div', 'lii-actions');
+      const editBtn = el('button', 'btn btn-ghost btn-xs', '✏️ Edytuj');
+      editBtn.addEventListener('click', () => loadLessonIntoBuilder(lesson.id));
+      const delBtn = el('button', 'btn btn-danger btn-xs', '🗑️');
+      delBtn.addEventListener('click', () => deleteLesson(lesson.id, lesson.title));
+      actions.appendChild(editBtn);
+      actions.appendChild(delBtn);
+      row.appendChild(actions);
+      list.appendChild(row);
+    });
+  }
+
+  drawList(lessons);
+  document.getElementById('lessonSearch').addEventListener('input', () => {
+    const q = query();
+    drawList(q ? lessons.filter(l => (l.title || '').toLowerCase().includes(q)) : lessons);
+  });
+}
+
+async function loadLessonIntoBuilder(id) {
+  const { data, error } = await sb.from('lessons').select('*').eq('id', id).single();
+  if (error || !data) return showToast('Nie udało się załadować lekcji.', 'error');
+  setMetadata(data);
+  lessonTabs = (data.tabs || []).map(t => ({
+    id: t.id || uid(), name: t.name || '', icon: t.icon || '', blocks: t.blocks || []
+  }));
+  activeAdminTabId = lessonTabs[0]?.id || null;
+  renderTabManager();
+  showBuilderSection();
+  showToast('Lekcja załadowana.', 'success');
+}
+
+async function deleteLesson(id, title) {
+  if (!confirm('Usunąć lekcję "' + (title || id) + '"? Tej operacji nie można cofnąć.')) return;
+  const { error } = await sb.from('lessons').delete().eq('id', id);
+  if (error) return showToast('Błąd: ' + error.message, 'error');
+  showToast('Lekcja usunięta.', '');
+  renderLessonIndex();
+}
+
+// ── STUDENTS ──────────────────────────────────────────────────────
+let allStudents = [];
+let allLessons  = [];
+
+async function renderStudents() {
+  const body = document.getElementById('studentTableBody');
+  body.textContent = '';
+
+  const [{ data: students }, { data: lessons }] = await Promise.all([
+    sb.from('students').select('*').order('name'),
+    sb.from('lessons').select('id, title, level, header_emoji').order('created_at', { ascending: false })
+  ]);
+
+  allStudents = students || [];
+  allLessons  = lessons  || [];
+
+  allStudents.forEach(s => {
+    const tr = document.createElement('tr');
+    const codeCell = el('td');
+    const codeSpan = el('code', null, s.code);
+    codeSpan.style.cssText = 'font-family:var(--font-mono);font-size:.85rem';
+    const copyBtn = el('button', 'btn btn-ghost btn-xs', '📋');
+    copyBtn.title = 'Kopiuj kod';
+    copyBtn.style.marginLeft = '6px';
+    copyBtn.addEventListener('click', () => { navigator.clipboard.writeText(s.code); showToast('Kod skopiowany!', 'success'); });
+    codeCell.appendChild(codeSpan);
+    codeCell.appendChild(copyBtn);
+
+    tr.innerHTML = `<td>${escHtml(s.name)}</td>`;
+    tr.appendChild(codeCell);
+    tr.innerHTML += `<td>${escHtml(s.prefix || '—')}</td><td>${s.streak_days || 0}🔥</td><td>${s.xp || 0}⭐</td>`;
+
+    const assignCell = el('td');
+    const assignBtn  = el('button', 'btn btn-ghost btn-xs', '🦉 Lekcje');
+    assignBtn.addEventListener('click', () => openAssignPanel(s));
+    assignCell.appendChild(assignBtn);
+    tr.appendChild(assignCell);
+
+    const actCell = el('td');
+    const editBtn = el('button', 'btn btn-ghost btn-xs', '✏️');
+    editBtn.style.marginRight = '4px';
+    editBtn.addEventListener('click', () => openStudentModal(s));
+    const delBtn = el('button', 'btn btn-danger btn-xs', '🗑️');
+    delBtn.addEventListener('click', () => deleteStudent(s.id, s.name));
+    actCell.appendChild(editBtn);
+    actCell.appendChild(delBtn);
+    tr.appendChild(actCell);
+
+    body.appendChild(tr);
+  });
+}
+
+function escHtml(s) { return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+function openStudentModal(student) {
+  document.getElementById('studentModalTitle').textContent = student ? 'Edytuj ucznia' : 'Dodaj ucznia';
+  document.getElementById('editStudentId').value  = student?.id || '';
+  document.getElementById('studentName').value    = student?.name || '';
+  document.getElementById('studentCode').value    = student?.code || '';
+  document.getElementById('studentPrefix').value  = student?.prefix || '';
+  document.getElementById('studentErr').style.display = 'none';
+  document.getElementById('studentModal').classList.add('open');
+}
+
+function closeStudentModal() { document.getElementById('studentModal').classList.remove('open'); }
+
+document.getElementById('addStudentBtn').addEventListener('click', () => openStudentModal(null));
+document.getElementById('studentModalCancelBtn').addEventListener('click', closeStudentModal);
+
+document.getElementById('saveStudentBtn').addEventListener('click', async () => {
+  const id     = document.getElementById('editStudentId').value;
+  const name   = document.getElementById('studentName').value.trim();
+  const code   = document.getElementById('studentCode').value.trim();
+  const prefix = document.getElementById('studentPrefix').value.trim();
+  const errEl  = document.getElementById('studentErr');
+  errEl.style.display = 'none';
+
+  if (!name || !code) {
+    errEl.textContent = 'Podaj imię i kod dostępu.'; errEl.style.display = 'block'; return;
+  }
+
+  try {
+    if (id) {
+      const { error } = await sb.from('students').update({ name, code, prefix }).eq('id', id);
+      if (error) throw error;
+    } else {
+      const { error } = await sb.from('students').insert({ name, code, prefix });
+      if (error) throw error;
+    }
+    closeStudentModal(); renderStudents(); showToast('Uczeń zapisany ✓', 'success');
+  } catch(e) {
+    errEl.textContent = 'Błąd: ' + e.message; errEl.style.display = 'block';
+  }
+});
+
+async function deleteStudent(id, name) {
+  if (!confirm('Usunąć ucznia "' + name + '"? Zostaną usunięte wszystkie jego postępy.')) return;
+  const { error } = await sb.from('students').delete().eq('id', id);
+  if (error) return showToast('Błąd: ' + error.message, 'error');
+  showToast('Uczeń usunięty.', '');
+  renderStudents();
+}
+
+// ── ASSIGN LESSONS ────────────────────────────────────────────────
+let assignStudentId = null;
+
+async function openAssignPanel(student) {
+  assignStudentId = student.id;
+  document.getElementById('assignStudentName').textContent = student.name;
+  const card = document.getElementById('assignCard');
+  card.style.display = 'block';
+  card.scrollIntoView({ behavior: 'smooth' });
+
+  const { data: existing } = await sb
+    .from('student_lessons')
+    .select('lesson_id, lesson_order')
+    .eq('student_id', student.id);
+
+  const existingMap = {};
+  (existing || []).forEach(e => { existingMap[e.lesson_id] = e.lesson_order; });
+
+  const listEl = document.getElementById('assignLessonsList');
+  listEl.textContent = '';
+
+  allLessons.forEach((lesson, idx) => {
+    const row = el('div');
+    row.style.cssText = 'display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)';
+    const cb = document.createElement('input');
+    cb.type = 'checkbox';
+    cb.id = 'assign_' + lesson.id;
+    cb.checked = !!existingMap[lesson.id];
+    cb.style.cssText = 'width:16px;height:16px;cursor:pointer';
+    const lbl = document.createElement('label');
+    lbl.htmlFor = 'assign_' + lesson.id;
+    lbl.style.cssText = 'flex:1;cursor:pointer;font-size:.9rem';
+    lbl.textContent = (lesson.header_emoji || '🦉') + ' ' + (lesson.title || '(bez tytułu)') + (lesson.level ? ' [' + lesson.level + ']' : '');
+    const orderInput = document.createElement('input');
+    orderInput.type = 'number';
+    orderInput.min  = 1;
+    orderInput.value = existingMap[lesson.id] || (idx + 1);
+    orderInput.style.cssText = 'width:50px;padding:4px 6px;border:1px solid var(--border);border-radius:5px;font-size:.82rem';
+    orderInput.dataset.lessonId = lesson.id;
+    row.appendChild(cb); row.appendChild(lbl); row.appendChild(orderInput);
+    listEl.appendChild(row);
+  });
+}
+
+document.getElementById('saveAssignBtn').addEventListener('click', async () => {
+  if (!assignStudentId) return;
+  const checkboxes = document.querySelectorAll('#assignLessonsList input[type=checkbox]');
+  const toUpsert = [], toDelete = [];
+
+  checkboxes.forEach(cb => {
+    const lid = cb.id.replace('assign_', '');
+    const orderEl = document.querySelector('#assignLessonsList input[data-lesson-id="' + lid + '"]');
+    const order   = parseInt(orderEl?.value) || 1;
+    if (cb.checked) {
+      toUpsert.push({ student_id: assignStudentId, lesson_id: lid, lesson_order: order });
+    } else {
+      toDelete.push(lid);
+    }
+  });
+
+  try {
+    if (toDelete.length) {
+      const { error } = await sb.from('student_lessons')
+        .delete()
+        .eq('student_id', assignStudentId)
+        .in('lesson_id', toDelete);
+      if (error) throw error;
+    }
+    if (toUpsert.length) {
+      const { error } = await sb.from('student_lessons')
+        .upsert(toUpsert, { onConflict: 'student_id,lesson_id' });
+      if (error) throw error;
+    }
+    showToast('Przypisania zapisane ✓', 'success');
+    document.getElementById('assignCard').style.display = 'none';
+  } catch(e) {
+    showToast('Błąd: ' + e.message, 'error');
+  }
+});
+
+// ── PROGRESS ──────────────────────────────────────────────────────
+async function populateProgressFilters() {
+  const [{ data: students }, { data: lessons }] = await Promise.all([
+    sb.from('students').select('id, name').order('name'),
+    sb.from('lessons').select('id, title').order('created_at', { ascending: false })
+  ]);
+
+  const sf = document.getElementById('progressStudentFilter');
+  const lf = document.getElementById('progressLessonFilter');
+  const currentS = sf.value, currentL = lf.value;
+  sf.textContent = ''; lf.textContent = '';
+  sf.appendChild(new Option('— wybierz ucznia —', ''));
+  lf.appendChild(new Option('— wybierz lekcję —', ''));
+  (students || []).forEach(s => sf.appendChild(new Option(s.name, s.id)));
+  (lessons  || []).forEach(l => lf.appendChild(new Option(l.title || '(bez tytułu)', l.id)));
+  if (currentS) sf.value = currentS;
+  if (currentL) lf.value = currentL;
+}
+
+document.getElementById('loadProgressBtn').addEventListener('click', async () => {
+  const sid = document.getElementById('progressStudentFilter').value;
+  const lid = document.getElementById('progressLessonFilter').value;
+  if (!sid || !lid) return showToast('Wybierz ucznia i lekcję.', '');
+
+  const { data: prog, error } = await sb
+    .from('lesson_progress')
+    .select('*')
+    .eq('student_id', sid)
+    .eq('lesson_id', lid)
+    .maybeSingle();
+
+  const display = document.getElementById('progressDisplay');
+  display.textContent = '';
+
+  if (error) { display.appendChild(el('p', null, 'Błąd: ' + error.message)); return; }
+  if (!prog) { display.appendChild(el('p', null, 'Brak danych postępu dla tej kombinacji.')); return; }
+
+  const card = el('div', 'admin-card');
+
+  // SRS stats
+  const srs = prog.srs_data || {};
+  const today = new Date().toISOString().slice(0, 10);
+  const due   = Object.values(srs).filter(c => !c.nextReview || c.nextReview <= today).length;
+  const total = Object.keys(srs).length;
+  const statsHtml = el('div');
+  statsHtml.innerHTML = `
+    <p style="margin-bottom:6px"><b>Fiszki SRS:</b> ${total} łącznie, ${due} do powtórki dziś</p>
+    <p style="margin-bottom:6px"><b>Bloki z postępem:</b> ${Object.keys(prog.block_progress || {}).length}</p>
+    <p style="margin-bottom:6px"><b>Moje słówka:</b> ${(prog.mywords || []).length}</p>
+    <p style="margin-bottom:12px"><b>Ostatnia aktualizacja:</b> ${prog.updated_at ? new Date(prog.updated_at).toLocaleString('pl-PL') : '—'}</p>
+  `;
+  card.appendChild(statsHtml);
+
+  // My Words management
+  const mwSection = el('div');
+  mwSection.style.cssText = 'margin-bottom:1.2rem;';
+  const mwHeader = el('div');
+  mwHeader.style.cssText = 'display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;';
+  mwHeader.appendChild(Object.assign(el('p', null, '⭐ Moje słówka ucznia:'), { style: { cssText: 'font-weight:600;font-size:.86rem;color:var(--ink-60);margin:0' } }));
+  mwSection.appendChild(mwHeader);
+
+  let mwWords = JSON.parse(JSON.stringify(prog.mywords || []));
+
+  function renderAdminMyWords() {
+    const existing = mwSection.querySelector('.mw-admin-list');
+    if (existing) existing.remove();
+    const list = el('div');
+    list.className = 'mw-admin-list';
+    list.style.cssText = 'display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;min-height:32px;';
+    if (!mwWords.length) {
+      const empty = el('span', null, 'Brak słówek');
+      empty.style.cssText = 'color:var(--ink-60);font-size:.82rem;';
+      list.appendChild(empty);
+    }
+    mwWords.forEach((w, i) => {
+      const chip = el('div');
+      chip.style.cssText = 'display:flex;align-items:center;gap:4px;background:var(--cream);border:1px solid var(--border);border-radius:20px;padding:3px 8px 3px 10px;font-size:.82rem;';
+      const txt = el('span', null, (w.en || w.word || '') + (w.pl ? ' / ' + w.pl : ''));
+      const del = el('button', null, '×');
+      del.style.cssText = 'background:none;border:none;cursor:pointer;color:#aaa;font-size:.9rem;padding:0 2px;line-height:1;';
+      del.addEventListener('click', () => { mwWords.splice(i, 1); renderAdminMyWords(); });
+      chip.appendChild(txt); chip.appendChild(del);
+      list.appendChild(chip);
+    });
+    mwSection.insertBefore(list, mwSection.querySelector('.mw-add-row'));
+  }
+
+  // Add word row
+  const addRow = el('div');
+  addRow.className = 'mw-add-row';
+  addRow.style.cssText = 'display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:8px;';
+  const mwEnInp = document.createElement('input'); mwEnInp.placeholder = 'Angielski'; mwEnInp.className = 'form-input'; mwEnInp.style.cssText = 'width:130px;padding:5px 8px;font-size:.82rem;';
+  const mwPlInp = document.createElement('input'); mwPlInp.placeholder = 'Polski (opcj.)'; mwPlInp.className = 'form-input'; mwPlInp.style.cssText = 'width:130px;padding:5px 8px;font-size:.82rem;';
+  const mwAddBtn = el('button', 'btn btn-sm', '+ Dodaj');
+  mwAddBtn.style.cssText = 'padding:5px 12px;font-size:.82rem;';
+  mwAddBtn.addEventListener('click', () => {
+    const en = mwEnInp.value.trim();
+    if (!en) return;
+    if (!mwWords.some(w => (w.en || w.word) === en)) mwWords.push({ en, pl: mwPlInp.value.trim() });
+    mwEnInp.value = ''; mwPlInp.value = '';
+    renderAdminMyWords();
+  });
+  addRow.appendChild(mwEnInp); addRow.appendChild(mwPlInp); addRow.appendChild(mwAddBtn);
+  mwSection.appendChild(addRow);
+  renderAdminMyWords();
+
+  const mwSave = el('button', 'btn btn-primary btn-sm', 'Zapisz słówka');
+  mwSave.style.cssText = 'font-size:.82rem;';
+  mwSave.addEventListener('click', async () => {
+    const { error } = await sb.from('lesson_progress').upsert(
+      { student_id: sid, lesson_id: lid, mywords: mwWords },
+      { onConflict: 'student_id,lesson_id' }
+    );
+    if (error) showToast('Błąd: ' + error.message, 'error');
+    else showToast('Słówka zapisane ✓', 'success');
+  });
+  mwSection.appendChild(mwSave);
+  card.appendChild(mwSection);
+
+  // Notes — student (editable by admin)
+  const notesDiv = el('div');
+  notesDiv.style.marginBottom = '1rem';
+  notesDiv.appendChild(Object.assign(el('p', null, 'Notatki ucznia (możesz edytować):'), { style: { cssText: 'font-weight:600;font-size:.86rem;color:var(--ink-60);margin-bottom:4px' } }));
+  const snTA = document.createElement('textarea');
+  snTA.className = 'notes-textarea';
+  snTA.value = prog.notes || '';
+  snTA.rows = 3;
+  notesDiv.appendChild(snTA);
+  const snSave = el('button', 'btn btn-primary btn-sm', 'Zapisz notatki ucznia');
+  snSave.style.marginTop = '8px';
+  snSave.addEventListener('click', async () => {
+    const { error } = await sb.from('lesson_progress').upsert(
+      { student_id: sid, lesson_id: lid, notes: snTA.value },
+      { onConflict: 'student_id,lesson_id' }
+    );
+    if (error) showToast('Błąd: ' + error.message, 'error');
+    else showToast('Notatki ucznia zapisane ✓', 'success');
+  });
+  notesDiv.appendChild(snSave);
+
+  // Teacher notes
+  const tnLabel = el('p', null, 'Notatki nauczyciela (widoczne tylko dla Ciebie):');
+  tnLabel.style.cssText = 'font-weight:600;font-size:.86rem;color:var(--ink-60);margin-bottom:4px;margin-top:12px;';
+  const tnTA = document.createElement('textarea');
+  tnTA.className = 'notes-textarea';
+  tnTA.value = prog.teacher_notes || '';
+  tnTA.rows  = 3;
+  notesDiv.appendChild(tnLabel);
+  notesDiv.appendChild(tnTA);
+  const tnSave = el('button', 'btn btn-primary btn-sm', 'Zapisz notatki nauczyciela');
+  tnSave.style.marginTop = '8px';
+  tnSave.addEventListener('click', async () => {
+    const { error } = await sb.from('lesson_progress').upsert(
+      { student_id: sid, lesson_id: lid, teacher_notes: tnTA.value },
+      { onConflict: 'student_id,lesson_id' }
+    );
+    if (error) showToast('Błąd: ' + error.message, 'error');
+    else showToast('Notatki nauczyciela zapisane ✓', 'success');
+  });
+  notesDiv.appendChild(tnSave);
+  card.appendChild(notesDiv);
+
+  display.appendChild(card);
+});
+
+// ── SETTINGS ──────────────────────────────────────────────────────
+async function loadSettings() {
+  const { data } = await sb.from('config').select('*').eq('id', 1).maybeSingle();
+  if (!data) return;
+  document.getElementById('cfgAnthropicKey').value   = data.anthropic_api_key  || '';
+  document.getElementById('cfgEmailPublic').value    = data.emailjs_public_key  || '';
+  document.getElementById('cfgEmailService').value   = data.emailjs_service_id  || '';
+  document.getElementById('cfgEmailTemplate').value  = data.emailjs_template_id || '';
+  document.getElementById('cfgEmailTo').value        = data.emailjs_to_email    || '';
+  aiPromptTemplate = data.ai_prompt || null;
+  document.getElementById('cfgAiPrompt').value = aiPromptTemplate || getDefaultPromptTemplate();
+}
+
+document.getElementById('saveCfgAi').addEventListener('click', async () => {
+  const key = document.getElementById('cfgAnthropicKey').value.trim();
+  const { error } = await sb.from('config').update({ anthropic_api_key: key }).eq('id', 1);
+  if (error) showToast('Błąd: ' + error.message, 'error');
+  else showToast('Klucz AI zapisany ✓', 'success');
+});
+
+document.getElementById('saveCfgEmail').addEventListener('click', async () => {
+  const { error } = await sb.from('config').update({
+    emailjs_public_key:  document.getElementById('cfgEmailPublic').value.trim(),
+    emailjs_service_id:  document.getElementById('cfgEmailService').value.trim(),
+    emailjs_template_id: document.getElementById('cfgEmailTemplate').value.trim(),
+    emailjs_to_email:    document.getElementById('cfgEmailTo').value.trim()
+  }).eq('id', 1);
+  if (error) showToast('Błąd: ' + error.message, 'error');
+  else showToast('Konfiguracja EmailJS zapisana ✓', 'success');
+});
+
+document.getElementById('saveCfgPrompt').addEventListener('click', async () => {
+  const val = document.getElementById('cfgAiPrompt').value;
+  const { error } = await sb.from('config').update({ ai_prompt: val }).eq('id', 1);
+  if (error) showToast('Błąd: ' + error.message, 'error');
+  else { aiPromptTemplate = val || null; showToast('Prompt zapisany ✓', 'success'); }
+});
+
+document.getElementById('exportPromptBtn').addEventListener('click', () => {
+  const val = document.getElementById('cfgAiPrompt').value || getDefaultPromptTemplate();
+  const blob = new Blob([val], { type: 'text/plain;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'ai-prompt.txt';
+  a.click();
+});
+
+document.getElementById('importPromptBtn').addEventListener('click', () => {
+  document.getElementById('importPromptFile').click();
+});
+
+document.getElementById('importPromptFile').addEventListener('change', e => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    document.getElementById('cfgAiPrompt').value = ev.target.result;
+    showToast('Prompt wczytany — kliknij Zapisz, żeby zachować.', 'success');
+  };
+  reader.readAsText(file, 'utf-8');
+  e.target.value = '';
+});
+
+document.getElementById('resetPromptBtn').addEventListener('click', () => {
+  document.getElementById('cfgAiPrompt').value = getDefaultPromptTemplate();
+  showToast('Prompt zresetowany do domyślnego — kliknij Zapisz, żeby zachować.', '');
+});
+
+// ── BUILDER BUTTONS ───────────────────────────────────────────────
+document.getElementById('newLessonBtn').addEventListener('click', newLesson);
+document.getElementById('newLessonFromListBtn').addEventListener('click', newLesson);
+document.getElementById('saveLessonBtn').addEventListener('click', saveLesson);
+
+// Export JSON
+document.getElementById('exportJsonBtn').addEventListener('click', () => {
+  const data = { ...getMetadata(), tabs: lessonTabs };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = (data.title || 'lesson').replace(/\s+/g, '_') + '.json';
+  a.click();
+});
+
+// Import JSON
+document.getElementById('importJsonBtn').addEventListener('click', () => {
+  document.getElementById('jsonPasteArea').value = '';
+  document.getElementById('importErr').style.display = 'none';
+  document.getElementById('importModal').classList.add('open');
+});
+document.getElementById('importCancelBtn').addEventListener('click', () => {
+  document.getElementById('importModal').classList.remove('open');
+});
+document.getElementById('importConfirmBtn').addEventListener('click', () => {
+  const raw = document.getElementById('jsonPasteArea').value.trim();
+  const errEl = document.getElementById('importErr');
+  errEl.style.display = 'none';
+  try {
+    const parsed = JSON.parse(raw);
+    loadJsonLesson(parsed);
+    document.getElementById('importModal').classList.remove('open');
+    showToast('JSON załadowany ✓', 'success');
+  } catch(e) {
+    errEl.textContent = 'Nieprawidłowy JSON: ' + e.message;
+    errEl.style.display = 'block';
+  }
+});
+
+// Drop zone
+const dropZone = document.getElementById('jsonDropZone');
+dropZone.addEventListener('click', () => {
+  const inp = document.createElement('input');
+  inp.type = 'file'; inp.accept = '.json,application/json';
+  inp.addEventListener('change', () => {
+    const file = inp.files[0]; if (!file) return;
+    const reader = new FileReader();
+    reader.onload = e => { document.getElementById('jsonPasteArea').value = e.target.result; };
+    reader.readAsText(file);
+  });
+  inp.click();
+});
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+dropZone.addEventListener('drop', e => {
+  e.preventDefault(); dropZone.classList.remove('drag-over');
+  const file = e.dataTransfer.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => { document.getElementById('jsonPasteArea').value = ev.target.result; };
+  reader.readAsText(file);
+});
+
+function loadJsonLesson(parsed) {
+  // Support both v1 and v2 formats
+  if (Array.isArray(parsed.tabs) && parsed.tabs.length && parsed.tabs[0].blocks !== undefined) {
+    // v2 format
+    lessonTabs = parsed.tabs.map(t => ({ id: t.id || uid(), name: t.name || '', icon: t.icon || '', blocks: t.blocks || [] }));
+  } else {
+    // v1 format — auto-convert
+    lessonTabs = convertV1ToV2Tabs(parsed);
+  }
+  setMetadata({
+    title:            parsed.title,
+    subtitle:         parsed.subtitle,
+    level:            parsed.level,
+    header_emoji:     parsed.headerEmoji || parsed.header_emoji,
+    target_lang:      parsed.target_lang      || document.getElementById('aiTargetLang')?.value      || 'en',
+    instruction_lang: parsed.instruction_lang || document.getElementById('aiInstructionLang')?.value || 'pl'
+  });
+  currentLessonId = null;
+  document.getElementById('lessonIdDisplay').textContent = '— nowa lekcja (zaimportowana) —';
+  activeAdminTabId = lessonTabs[0]?.id || null;
+  renderTabManager();
+}
+
+// ── V1 → V2 AUTO-CONVERTER ───────────────────────────────────────
+function convertV1ToV2Tabs(v1) {
+  const tabs = [];
+  function addTab(name, icon, blocks) {
+    if (blocks && blocks.length) tabs.push({ id: uid(), name, icon, blocks });
+  }
+
+  if (v1.introduction) {
+    const blocks = (v1.introduction.sections || []).map(s => ({ id: uid(), type: s.type || 'info', data: s }));
+    addTab('Introduction', '📖', blocks);
+  }
+
+  if (v1.vocabulary) {
+    const blocks = [];
+    (v1.vocabulary.sections || []).forEach(s => blocks.push({ id: uid(), type: s.type === 'grid' ? 'vocab-grid' : 'vocab-table', data: s }));
+    if (v1.vocabulary.phrases) blocks.push({ id: uid(), type: 'phrases', data: { title: 'Useful Phrases', items: v1.vocabulary.phrases } });
+    (v1.vocabulary.blocks || []).forEach(b => blocks.push({ id: uid(), type: b.type, data: b }));
+    addTab('Vocabulary', '🦉', blocks);
+  }
+
+  if (v1.grammar) {
+    const blocks = (v1.grammar.blocks || []).map(b => ({ id: uid(), type: b.type, data: b }));
+    addTab('Grammar', '🦉', blocks);
+  }
+
+  if (v1.reading) {
+    const blocks = [{ id: uid(), type: 'article', data: { articleTitle: v1.reading.title, text: v1.reading.text, image: v1.reading.image } }];
+    (v1.reading.exercises || []).forEach(b => blocks.push({ id: uid(), type: b.type, data: b }));
+    addTab('Reading', '🦉', blocks);
+  }
+
+  if (v1.exercises && v1.exercises.length) {
+    const blocks = v1.exercises.map(b => ({ id: uid(), type: b.type, data: b }));
+    addTab('Exercises', '✏️', blocks);
+  }
+
+  if (v1.speaking) {
+    const blocks = [];
+    (v1.speaking.conversations || []).forEach(c => blocks.push({ id: uid(), type: 'conversation', data: c }));
+    (v1.speaking.blocks || []).forEach(b => blocks.push({ id: uid(), type: b.type, data: b }));
+    addTab('Speaking', '🦉', blocks);
+  }
+
+  if (v1.flashcards && v1.flashcards.length) {
+    addTab('Flashcards', '🃏', [{ id: uid(), type: 'flashcards', data: { title: 'Fiszki', items: v1.flashcards } }]);
+  }
+
+  if (v1.homework && v1.homework.length) {
+    const blocks = v1.homework.map(b => ({ id: uid(), type: b.type || 'checklist', data: b }));
+    addTab('Homework', '📝', blocks);
+  }
+
+  return tabs.length ? tabs : defaultTabs();
+}
+
+// ── PREVIEW ───────────────────────────────────────────────────────
+document.getElementById('previewBtn').addEventListener('click', () => {
+  const overlay = document.getElementById('previewOverlay');
+  const content = document.getElementById('previewContent');
+  content.textContent = '';
+  overlay.classList.add('open');
+
+  // Build a mini lesson page inside the overlay
+  const meta = getMetadata();
+  const hdr = el('div', 'lesson-header');
+  hdr.style.padding = '2rem';
+  if (meta.level) hdr.appendChild(el('div', 'badge', meta.level));
+  hdr.appendChild(el('h1', null, meta.title || 'Lekcja'));
+  if (meta.subtitle) hdr.appendChild(el('p', null, meta.subtitle));
+  content.appendChild(hdr);
+
+  // Simple tab nav for preview
+  const navWrap = document.createElement('div');
+  navWrap.style.cssText = 'background:var(--ink);padding:8px 12px;display:flex;gap:4px;overflow-x:auto;position:sticky;top:0;z-index:100';
+  const panels = document.createElement('div');
+
+  lessonTabs.forEach((tab, ti) => {
+    const btn = el('button', 'nav-tab' + (ti === 0 ? ' active' : ''), (tab.icon ? tab.icon + ' ' : '') + tab.name);
+    btn.addEventListener('click', () => {
+      navWrap.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active'));
+      panels.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById('preview-panel-' + tab.id)?.classList.add('active');
+    });
+    navWrap.appendChild(btn);
+
+    const panel = el('div', 'tab-panel' + (ti === 0 ? ' active' : ''));
+    panel.id = 'preview-panel-' + tab.id;
+
+    if (OWL.Blocks) {
+      (tab.blocks || []).forEach(block => {
+        const blockEl = OWL.Blocks.render(block, { ttsLang: langToLocale(getMetadata().target_lang), readOnly: true });
+        if (blockEl) panel.appendChild(blockEl);
+      });
+    } else {
+      panel.appendChild(el('p', null, 'Ładowanie renderera bloków...'));
+    }
+    panels.appendChild(panel);
+  });
+
+  content.appendChild(navWrap);
+  content.appendChild(panels);
+});
+
+document.getElementById('previewCloseBtn').addEventListener('click', () => {
+  document.getElementById('previewOverlay').classList.remove('open');
+});
+
+// ── AI GENERATOR ──────────────────────────────────────────────────
+document.getElementById('aiGenBtn').addEventListener('click', async () => {
+  // Pre-fill languages from current lesson metadata
+  const meta = getMetadata();
+  if (meta.target_lang)      document.getElementById('aiTargetLang').value      = meta.target_lang;
+  if (meta.instruction_lang) document.getElementById('aiInstructionLang').value = meta.instruction_lang;
+  if (meta.level)            document.getElementById('aiLevel').value            = meta.level;
+
+  const { data: cfg } = await sb.from('config').select('anthropic_api_key').eq('id', 1).maybeSingle();
+  const hasKey = !!(cfg?.anthropic_api_key);
+  document.getElementById('aiDirectSection').style.display = hasKey ? 'block' : 'none';
+  document.getElementById('aiDirectBtn').style.display     = hasKey ? 'inline-flex' : 'none';
+  document.getElementById('aiModal').classList.add('open');
+});
+
+document.getElementById('aiModalCloseBtn').addEventListener('click', () => {
+  document.getElementById('aiModal').classList.remove('open');
+});
+
+document.getElementById('aiCopyPromptBtn').addEventListener('click', async () => {
+  const prompt = buildAiPrompt();
+  await navigator.clipboard.writeText(prompt);
+  showToast('Prompt skopiowany do schowka! Wklej do Claude lub ChatGPT.', 'success');
+  document.getElementById('aiModal').classList.remove('open');
+});
+
+document.getElementById('aiDirectBtn').addEventListener('click', async () => {
+  const statusEl = document.getElementById('aiStatus');
+  statusEl.style.display = 'block';
+  statusEl.textContent = '⏳ Generuję lekcję... (może potrwać 30-60 sekund)';
+
+  try {
+    const { data: cfg } = await sb.from('config').select('anthropic_api_key').eq('id', 1).maybeSingle();
+    if (!cfg?.anthropic_api_key) throw new Error('Brak klucza API. Ustaw go w Ustawienia.');
+
+    const prompt = buildAiPrompt();
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': cfg.anthropic_api_key,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 8192,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error(err.error?.message || 'Błąd API: ' + response.status);
+    }
+
+    const result = await response.json();
+    const text = result.content?.[0]?.text || '';
+
+    // Extract JSON from response
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) throw new Error('Nie znaleziono JSON w odpowiedzi AI.');
+
+    const parsed = JSON.parse(jsonMatch[0]);
+    loadJsonLesson(parsed);
+    document.getElementById('aiModal').classList.remove('open');
+    showToast('Lekcja wygenerowana! Sprawdź i zapisz. ✓', 'success');
+  } catch(e) {
+    statusEl.textContent = '❌ Błąd: ' + e.message;
+    console.error(e);
+  }
+});
+
+function getDefaultPromptTemplate() {
+  return `You are a lesson generator for Owl's Academy, a language learning platform.
+Generate a complete {{TARGET_LANG_NAME}} language lesson (student instructions in {{INSTRUCTION_LANG_NAME}}).
+Return ONLY raw valid JSON — no markdown, no code fences, no comments, no text before or after.
+
+═══════════════════════════════════════════════
+PARAMETERS
+═══════════════════════════════════════════════
+Target language (being taught): {{TARGET_LANG_NAME}} [{{TARGET_LANG}}]
+Instruction language (student's native/known language): {{INSTRUCTION_LANG_NAME}} [{{INSTRUCTION_LANG}}]
+Level: {{LEVEL}}
+Duration: {{DURATION}} minutes
+Topic: {{TOPIC}}
+{{REQUIREMENTS}}
+
+═══════════════════════════════════════════════
+LANGUAGE RULES
+═══════════════════════════════════════════════
+• "en" fields → always {{TARGET_LANG_NAME}} (target language being learned)
+• "pl" fields → always {{INSTRUCTION_LANG_NAME}} (instruction/translation language)
+• Exercise sentences, gaps, articles, grammar examples → in {{TARGET_LANG_NAME}}
+• Instructions, titles, labels, button texts, hints for student → in {{INSTRUCTION_LANG_NAME}}
+• Flashcard "word" → {{TARGET_LANG_NAME}}; "definition" → {{INSTRUCTION_LANG_NAME}}; "example" → sentence in {{TARGET_LANG_NAME}}
+• Glossary "word" → {{TARGET_LANG_NAME}}; "phonetic" → IPA; "translation" → {{INSTRUCTION_LANG_NAME}}; "hint" → short definition in {{TARGET_LANG_NAME}}
+
+═══════════════════════════════════════════════
+JSON TOP-LEVEL STRUCTURE
+═══════════════════════════════════════════════
+{
+  "title": "Lesson title in {{TARGET_LANG_NAME}}",
+  "subtitle": "Short description of content",
+  "level": "{{LEVEL}}",
+  "target_lang": "{{TARGET_LANG}}",
+  "instruction_lang": "{{INSTRUCTION_LANG}}",
+  "header_emoji": "single emoji",
+  "tabs": [ /* array of tab objects — see DEFAULT TABS below */ ]
+}
+
+Each tab: { "id": "tab_xxx", "name": "...", "icon": "emoji", "blocks": [ /* block objects */ ] }
+Each block: { "id": "b_xxx", "type": "TYPE", "data": { /* fields per type — see BLOCK TYPES */ } }
+Use unique short ids for id fields (e.g. "tab_intro", "b_q1", "b_art1").
+
+═══════════════════════════════════════════════
+DEFAULT TABS (generate ALL 8 in this order)
+═══════════════════════════════════════════════
+
+TAB 1 — "{{TAB_INTRO}}" 📖  id: "tab_intro"
+Recommended block order:
+  quote → discussion → article → glossary → comprehension → discussion → cta
+
+TAB 2 — "{{TAB_VOCAB}}" 🦉  id: "tab_vocab"
+Recommended block order:
+  vocab-grid → vocab-table → phrases → matching → gapfill → vocab-mcq → vocab-sentcomp → vocab-discussion
+
+TAB 3 — "{{TAB_GRAMMAR}}" 🦉  id: "tab_grammar"
+Recommended block order:
+  info → table → examples → two-col → quiz → gapfill → transform → errorcorrect
+
+TAB 4 — "{{TAB_READING}}" 🦉  id: "tab_reading"
+Recommended block order:
+  article (long) → vocab-grid (key words) → comprehension → tf → vic → openq
+
+TAB 5 — "{{TAB_EXERCISES}}" ✏️  id: "tab_exercises"
+Recommended block order:
+  quiz → gapfill → translation → matching → scramble → sentcomp
+
+TAB 6 — "{{TAB_SPEAKING}}" 🦉  id: "tab_speaking"
+Recommended block order:
+  conversation → discussion → hotseats → wyr → opinions → ranking → debate → monologue → pairs
+
+TAB 7 — "{{TAB_FLASHCARDS}}" 🃏  id: "tab_flashcards"
+Single block: flashcards
+
+TAB 8 — "{{TAB_HOMEWORK}}" 📝  id: "tab_homework"
+Recommended block order:
+  hw-write → checklist → gapfill → translation → matching → quiz → transform → errorcorrect
+
+═══════════════════════════════════════════════
+ALL AVAILABLE BLOCK TYPES WITH DATA SCHEMAS
+═══════════════════════════════════════════════
+
+── DISPLAY BLOCKS ──────────────────────────────
+
+quote
+{ "text": "quote in {{TARGET_LANG_NAME}}", "author": "Name" }
+
+discussion
+{ "title": "({{INSTRUCTION_LANG_NAME}})", "description": "({{INSTRUCTION_LANG_NAME}}, optional)", "label": "({{INSTRUCTION_LANG_NAME}}, optional)", "questions": ["question in {{INSTRUCTION_LANG_NAME}}"] }
+
+article
+{ "articleTitle": "title", "text": "HTML text. Use <span class='hl'>word</span> for yellow highlight, <span class='hlg'>word</span> for green.", "footnote": "* word — explanation (optional)", "image": "" }
+
+glossary
+{ "title": "(optional)", "items": [{ "word": "{{TARGET_LANG_NAME}}", "phonetic": "/IPA/", "translation": "{{INSTRUCTION_LANG_NAME}}", "hint": "short definition in {{TARGET_LANG_NAME}}" }] }
+
+info
+{ "title": "({{INSTRUCTION_LANG_NAME}})", "text": "explanation in {{INSTRUCTION_LANG_NAME}}", "tip": "memory tip (optional)", "color": "yellow|green|purple|orange|red|default" }
+
+table
+{ "title": "({{INSTRUCTION_LANG_NAME}})", "headers": ["col1","col2",...], "rows": [["cell","cell"]], "color": "purple|green|yellow|default", "tip": "(optional)" }
+
+examples
+{ "title": "({{INSTRUCTION_LANG_NAME}})", "items": [{ "pl": "{{INSTRUCTION_LANG_NAME}} sentence", "en": "{{TARGET_LANG_NAME}} sentence" }], "color": "green|default" }
+
+two-col
+{ "title": "({{INSTRUCTION_LANG_NAME}})", "tip": "(optional)", "columns": [{ "header": "col title", "color": "#hex (optional)", "items": [{ "pl": "{{INSTRUCTION_LANG_NAME}}", "en": "{{TARGET_LANG_NAME}}" }] }, { "header": "...", "items": [...] }] }
+
+image
+{ "title": "(optional)", "image": "", "caption": "caption text" }
+
+cta
+{ "label": "({{INSTRUCTION_LANG_NAME}}, optional)", "text": "call to action in {{INSTRUCTION_LANG_NAME}}", "buttonText": "button label in {{INSTRUCTION_LANG_NAME}} →", "targetTabId": "tab_xxx" }
+
+phrases
+{ "title": "({{INSTRUCTION_LANG_NAME}})", "items": [{ "pl": "{{INSTRUCTION_LANG_NAME}} phrase", "en": "{{TARGET_LANG_NAME}} phrase" }] }
+
+vocab-grid
+{ "title": "({{INSTRUCTION_LANG_NAME}})", "color": "green|yellow|purple|orange|red|default", "items": [{ "emoji": "🦉", "pl": "{{INSTRUCTION_LANG_NAME}}", "en": "{{TARGET_LANG_NAME}}" }] }
+
+vocab-table
+{ "title": "({{INSTRUCTION_LANG_NAME}})", "color": "purple|default", "items": [{ "pl": "{{INSTRUCTION_LANG_NAME}}", "en": "{{TARGET_LANG_NAME}}" }] }
+
+comprehension
+{ "title": "({{INSTRUCTION_LANG_NAME}})", "instruction": "({{INSTRUCTION_LANG_NAME}})", "questions": [{ "question": "{{INSTRUCTION_LANG_NAME}}", "answer": "{{TARGET_LANG_NAME}}" }] }
+
+── INTERACTIVE EXERCISE BLOCKS ─────────────────
+
+quiz  (always exactly 4 options per question)
+{ "title": "({{INSTRUCTION_LANG_NAME}})", "instruction": "({{INSTRUCTION_LANG_NAME}})", "questions": [{ "q": "sentence/question in {{TARGET_LANG_NAME}}", "options": ["opt1","opt2","opt3","opt4"], "answer": "correct option (must match one of options exactly)", "explanation": "{{INSTRUCTION_LANG_NAME}}" }] }
+
+gapfill  (use ___ for the gap in sentence)
+{ "title": "({{INSTRUCTION_LANG_NAME}})", "instruction": "({{INSTRUCTION_LANG_NAME}})", "wordbank": ["{{TARGET_LANG_NAME}} word", ...], "items": [{ "sentence": "{{TARGET_LANG_NAME}} sentence with ___ gap", "answer": "{{TARGET_LANG_NAME}} word" }] }
+
+matching
+{ "title": "({{INSTRUCTION_LANG_NAME}})", "instruction": "({{INSTRUCTION_LANG_NAME}})", "pairs": [{ "word": "{{TARGET_LANG_NAME}} term", "def": "{{INSTRUCTION_LANG_NAME}} definition" }] }
+
+translation
+{ "title": "({{INSTRUCTION_LANG_NAME}})", "instruction": "({{INSTRUCTION_LANG_NAME}})", "items": [{ "pl": "{{INSTRUCTION_LANG_NAME}} text", "hint": "grammar/vocab hint", "en": "{{TARGET_LANG_NAME}} answer" }] }
+
+transform
+{ "title": "({{INSTRUCTION_LANG_NAME}})", "instruction": "({{INSTRUCTION_LANG_NAME}})", "items": [{ "original": "{{TARGET_LANG_NAME}} sentence", "instruction": "transformation instruction in {{INSTRUCTION_LANG_NAME}}", "answer": "{{TARGET_LANG_NAME}} answer", "hint": "optional" }] }
+
+errorcorrect
+{ "title": "({{INSTRUCTION_LANG_NAME}})", "instruction": "({{INSTRUCTION_LANG_NAME}})", "items": [{ "sentence": "{{TARGET_LANG_NAME}} sentence WITH error", "error": "wrong part", "correction": "correct part", "explanation": "{{INSTRUCTION_LANG_NAME}}" }] }
+
+ownsentences
+{ "title": "({{INSTRUCTION_LANG_NAME}})", "instruction": "({{INSTRUCTION_LANG_NAME}})", "structures": ["structure 1", "structure 2"], "example": "example sentence in {{TARGET_LANG_NAME}}" }
+
+sentcomp  (sentence completion)
+{ "title": "({{INSTRUCTION_LANG_NAME}})", "instruction": "({{INSTRUCTION_LANG_NAME}})", "items": [{ "starter": "{{TARGET_LANG_NAME}} sentence starter..." }] }
+
+tf  (true/false/not mentioned)
+{ "title": "({{INSTRUCTION_LANG_NAME}})", "instruction": "({{INSTRUCTION_LANG_NAME}})", "items": [{ "statement": "{{TARGET_LANG_NAME}} statement", "answer": "T|F|NM", "explanation": "{{INSTRUCTION_LANG_NAME}}" }] }
+
+vic  (vocabulary in context)
+{ "title": "({{INSTRUCTION_LANG_NAME}})", "instruction": "({{INSTRUCTION_LANG_NAME}})", "items": [{ "sentence": "{{TARGET_LANG_NAME}} sentence with target word", "question": "{{INSTRUCTION_LANG_NAME}}", "options": ["opt1","opt2","opt3","opt4"], "correct": 0, "explanation": "{{INSTRUCTION_LANG_NAME}}" }] }
+
+openq  (open questions)
+{ "title": "({{INSTRUCTION_LANG_NAME}})", "instruction": "({{INSTRUCTION_LANG_NAME}})", "items": [{ "q": "{{INSTRUCTION_LANG_NAME}} question", "hint": "optional hint" }] }
+
+scramble  (word order)
+{ "title": "({{INSTRUCTION_LANG_NAME}})", "instruction": "({{INSTRUCTION_LANG_NAME}})", "items": [{ "sentence": "{{TARGET_LANG_NAME}} sentence to unscramble", "context": "optional context in {{INSTRUCTION_LANG_NAME}}" }] }
+
+vocab-mcq
+{ "title": "({{INSTRUCTION_LANG_NAME}})", "instruction": "({{INSTRUCTION_LANG_NAME}})", "questions": [{ "sentence": "{{TARGET_LANG_NAME}} sentence with ___", "options": ["opt1","opt2","opt3","opt4"], "answer": "correct", "explanation": "{{INSTRUCTION_LANG_NAME}}" }] }
+
+vocab-sentcomp
+{ "title": "({{INSTRUCTION_LANG_NAME}})", "instruction": "({{INSTRUCTION_LANG_NAME}})", "starters": ["{{TARGET_LANG_NAME}} sentence starter..."] }
+
+vocab-scramble
+{ "title": "({{INSTRUCTION_LANG_NAME}})", "instruction": "({{INSTRUCTION_LANG_NAME}})", "items": [{ "sentence": "{{TARGET_LANG_NAME}} words to unscramble", "context": "{{INSTRUCTION_LANG_NAME}} (optional)" }] }
+
+vocab-discussion
+{ "title": "({{INSTRUCTION_LANG_NAME}})", "instruction": "({{INSTRUCTION_LANG_NAME}})", "questions": [{ "q": "{{INSTRUCTION_LANG_NAME}} discussion question", "hint": "optional" }] }
+
+collocations
+{ "title": "({{INSTRUCTION_LANG_NAME}})", "instruction": "({{INSTRUCTION_LANG_NAME}})", "blocks": [{ "keyword": "{{TARGET_LANG_NAME}} keyword", "instruction": "{{INSTRUCTION_LANG_NAME}}", "options": [{ "word": "{{TARGET_LANG_NAME}}", "correct": true }], "note": "{{INSTRUCTION_LANG_NAME}} note" }] }
+
+wordform
+{ "title": "({{INSTRUCTION_LANG_NAME}})", "instruction": "({{INSTRUCTION_LANG_NAME}})", "columns": ["Noun","Verb","Adjective","Adverb"], "rows": [{ "root": "word", "noun": {"given":"form or null","answer":"form or —"}, "verb": {"given":null,"answer":"form"}, "adj": {"given":null,"answer":"form"}, "adv": {"given":null,"answer":"form"} }] }
+
+── FLASHCARDS ───────────────────────────────────
+
+flashcards
+{ "title": "({{INSTRUCTION_LANG_NAME}})", "instruction": "({{INSTRUCTION_LANG_NAME}}, optional)", "items": [{ "word": "{{TARGET_LANG_NAME}} word/phrase", "definition": "{{INSTRUCTION_LANG_NAME}} meaning", "example": "example sentence in {{TARGET_LANG_NAME}}", "emoji": "🦉" }] }
+
+── SPEAKING BLOCKS ─────────────────────────────
+
+conversation
+{ "title": "({{INSTRUCTION_LANG_NAME}})", "prompts": [{ "q": "{{INSTRUCTION_LANG_NAME}} cue", "qEn": "{{TARGET_LANG_NAME}} cue", "answer": "model answer in {{TARGET_LANG_NAME}}" }] }
+
+hotseats
+{ "title": "({{INSTRUCTION_LANG_NAME}})", "timer": 60, "questions": ["question in {{INSTRUCTION_LANG_NAME}}"], "usefulLanguage": "useful expressions in {{TARGET_LANG_NAME}}" }
+
+opinions
+{ "title": "({{INSTRUCTION_LANG_NAME}})", "cards": [{ "text": "opinion statement in {{TARGET_LANG_NAME}}", "prompt": "{{INSTRUCTION_LANG_NAME}} discussion prompt" }], "usefulLanguage": "useful expressions in {{TARGET_LANG_NAME}}" }
+
+wyr  (would you rather)
+{ "title": "({{INSTRUCTION_LANG_NAME}})", "questions": [{ "a": "{{TARGET_LANG_NAME}} option", "b": "{{TARGET_LANG_NAME}} option", "hint": "{{INSTRUCTION_LANG_NAME}}" }], "usefulLanguage": "..." }
+
+ranking
+{ "title": "({{INSTRUCTION_LANG_NAME}})", "instruction": "({{INSTRUCTION_LANG_NAME}})", "items": ["{{TARGET_LANG_NAME}} item to rank"], "discussion": "{{INSTRUCTION_LANG_NAME}} follow-up question", "usefulLanguage": "..." }
+
+debate
+{ "title": "({{INSTRUCTION_LANG_NAME}})", "motions": ["debate motion in {{TARGET_LANG_NAME}}"], "usefulLanguage": "..." }
+
+monologue
+{ "title": "({{INSTRUCTION_LANG_NAME}})", "timer": 120, "prompts": [{ "text": "{{INSTRUCTION_LANG_NAME}} prompt", "tip": "{{INSTRUCTION_LANG_NAME}} tip" }], "usefulLanguage": "..." }
+
+pairs
+{ "title": "({{INSTRUCTION_LANG_NAME}})", "activities": [{ "title": "{{INSTRUCTION_LANG_NAME}}", "badge": "pair|group", "instructions": "{{INSTRUCTION_LANG_NAME}}", "items": ["role/scenario in {{TARGET_LANG_NAME}}"], "time": "X min" }], "usefulLanguage": "..." }
+
+discussion (in speaking context)
+{ "title": "({{INSTRUCTION_LANG_NAME}})", "questions": [{ "text": "{{INSTRUCTION_LANG_NAME}} question", "tip": "{{INSTRUCTION_LANG_NAME}} tip", "tag": "personal|global|professional (optional)" }], "usefulLanguage": "..." }
+
+── HOMEWORK BLOCKS ─────────────────────────────
+
+hw-write
+{ "title": "({{INSTRUCTION_LANG_NAME}})", "prompt": "writing task instructions in {{INSTRUCTION_LANG_NAME}} with specific sentence count" }
+
+checklist
+{ "title": "({{INSTRUCTION_LANG_NAME}})", "items": ["task description in {{INSTRUCTION_LANG_NAME}}"] }
+
+(For homework exercises, reuse: gapfill, translation, matching, quiz, transform, errorcorrect, ownsentences, sentcomp)
+
+═══════════════════════════════════════════════
+QUANTITY REQUIREMENTS (for {{DURATION}}-minute lesson)
+═══════════════════════════════════════════════
+Introduction article: {{Q_INTRO_ART}}+ words in {{TARGET_LANG_NAME}}
+Glossary items: {{Q_GLOSSARY}}+
+Discussion questions (intro): {{Q_DISCUSS}}+
+Comprehension questions (intro): {{Q_COMPREH}}+
+Vocab-grid items: {{Q_VOCAB_GRID}}+
+Vocab-table items: {{Q_VOCAB_TABLE}}+
+Phrases: {{Q_PHRASES}}+
+Grammar info/table/examples blocks: {{Q_GR_BLOCKS}}+ blocks total
+Examples items: {{Q_EXAMPLES}}+
+Reading article: {{Q_READ_WORDS}}+ words, {{Q_READ_HL}}+ highlighted words
+Reading vocab: {{Q_READ_VOCAB}}+
+Reading comprehension: {{Q_READ_COMPR}}+
+Quiz questions (4 options each): {{Q_QUIZ}}+
+Gapfill items: {{Q_FILL}}+
+Translation items: {{Q_TRANSL}}+
+Speaking conversation prompts: {{Q_SPEAK_CONV}}+
+Speaking discussion questions: {{Q_SPEAK_Q}}+
+⭐ FLASHCARDS (PRIORITY — do not reduce): {{Q_CARDS}}+
+Homework tasks: {{Q_HW_TASKS}}+
+Homework checklist items: {{Q_HW_CHECK}}+
+
+═══════════════════════════════════════════════
+QUALITY RULES
+═══════════════════════════════════════════════
+• Quiz wrong options must be plausible — not obviously wrong
+• All sentences must be natural and topically coherent
+• Reading: write full paragraphs, not bullet points
+• Grammar: always include info + table + examples; add interactive exercises
+• Flashcards: cover vocab-grid words + collocations + verbs + phrases — build from simple to complex
+• Speaking blocks: every block MUST include "usefulLanguage" field with 4-6 model expressions in {{TARGET_LANG_NAME}}
+• CTA buttons: link correctly to the next tab using its id (tab_vocab, tab_grammar, etc.)
+• Intro article must differ from the main reading article — shorter, general warm-up
+• Do NOT skip any of the 8 default tabs
+
+Return ONLY the raw JSON object. Start with { and end with }. No other text.`;
+}
+
+function substitutePrompt(template, vars) {
+  return template.replace(/\{\{([A-Z0-9_]+)\}\}/g, (_, key) =>
+    key in vars ? String(vars[key]) : '{{' + key + '}}'
+  );
+}
+
+function buildAiPrompt() {
+  const targetLang      = document.getElementById('aiTargetLang').value;
+  const instructionLang = document.getElementById('aiInstructionLang').value;
+  const level           = document.getElementById('aiLevel').value;
+  const dur             = parseInt(document.getElementById('aiDuration').value);
+  const topic           = document.getElementById('aiTopic').value.trim();
+  const reqs            = document.getElementById('aiRequirements').value.trim();
+
+  const tName = langName(targetLang);
+  const iName = langName(instructionLang);
+
+  // Quantity table by duration
+  const q = dur <= 30
+    ? { introArt:100, glossary:3, discuss:2, compreh:2, vocabGrid:10, vocabTable:8, phrases:5, grBlocks:2, examples:5, readWords:150, readHl:4, readVocab:5, readCompr:5, quiz:4, fill:4, transl:3, speakConv:3, speakQ:3, cards:50, hwTasks:5, hwCheck:6 }
+    : dur >= 90
+    ? { introArt:400, glossary:8, discuss:6, compreh:5, vocabGrid:30, vocabTable:20, phrases:15, grBlocks:5, examples:15, readWords:500, readHl:12, readVocab:15, readCompr:12, quiz:12, fill:12, transl:10, speakConv:10, speakQ:15, cards:150, hwTasks:15, hwCheck:12 }
+    : { introArt:250, glossary:5, discuss:4, compreh:3, vocabGrid:20, vocabTable:15, phrases:10, grBlocks:4, examples:10, readWords:350, readHl:8, readVocab:10, readCompr:8, quiz:8, fill:8, transl:6, speakConv:6, speakQ:10, cards:100, hwTasks:10, hwCheck:8 };
+
+  const tabN = instructionLang === 'pl'
+    ? { intro:'Wprowadzenie', vocab:'Słownictwo', grammar:'Gramatyka', reading:'Czytanie', exercises:'Ćwiczenia', speaking:'Mówienie', flashcards:'Fiszki', homework:'Praca domowa' }
+    : { intro:'Introduction', vocab:'Vocabulary', grammar:'Grammar', reading:'Reading', exercises:'Exercises', speaking:'Speaking', flashcards:'Flashcards', homework:'Homework' };
+
+  const vars = {
+    TARGET_LANG_NAME: tName, INSTRUCTION_LANG_NAME: iName,
+    TARGET_LANG: targetLang, INSTRUCTION_LANG: instructionLang,
+    LEVEL: level, DURATION: dur,
+    TOPIC: topic || '(choose a rich, interesting topic suitable for ' + level + ' level)',
+    REQUIREMENTS: reqs ? 'Special requirements: ' + reqs : '',
+    Q_INTRO_ART: q.introArt, Q_GLOSSARY: q.glossary, Q_DISCUSS: q.discuss, Q_COMPREH: q.compreh,
+    Q_VOCAB_GRID: q.vocabGrid, Q_VOCAB_TABLE: q.vocabTable, Q_PHRASES: q.phrases,
+    Q_GR_BLOCKS: q.grBlocks, Q_EXAMPLES: q.examples,
+    Q_READ_WORDS: q.readWords, Q_READ_HL: q.readHl, Q_READ_VOCAB: q.readVocab, Q_READ_COMPR: q.readCompr,
+    Q_QUIZ: q.quiz, Q_FILL: q.fill, Q_TRANSL: q.transl,
+    Q_SPEAK_CONV: q.speakConv, Q_SPEAK_Q: q.speakQ, Q_CARDS: q.cards,
+    Q_HW_TASKS: q.hwTasks, Q_HW_CHECK: q.hwCheck,
+    TAB_INTRO: tabN.intro, TAB_VOCAB: tabN.vocab, TAB_GRAMMAR: tabN.grammar,
+    TAB_READING: tabN.reading, TAB_EXERCISES: tabN.exercises, TAB_SPEAKING: tabN.speaking,
+    TAB_FLASHCARDS: tabN.flashcards, TAB_HOMEWORK: tabN.homework,
+  };
+
+  return substitutePrompt(aiPromptTemplate || getDefaultPromptTemplate(), vars);
+}
+
+// ── AUTH ──────────────────────────────────────────────────────────
+document.getElementById('loginAdminBtn').addEventListener('click', async () => {
+  const email = document.getElementById('loginEmail').value.trim();
+  const pass  = document.getElementById('loginPass').value;
+  const errEl = document.getElementById('loginAdminErr');
+  errEl.style.display = 'none';
+  const btn = document.getElementById('loginAdminBtn');
+  btn.textContent = 'Logowanie...'; btn.disabled = true;
+
+  const { data, error } = await sb.auth.signInWithPassword({ email, password: pass });
+  btn.textContent = 'Zaloguj się →'; btn.disabled = false;
+
+  if (error) {
+    errEl.textContent = '❌ ' + (error.message === 'Invalid login credentials' ? 'Nieprawidłowy email lub hasło.' : error.message);
+    errEl.style.display = 'block';
+    return;
+  }
+
+  showAdminApp(data.user);
+});
+
+document.getElementById('loginEmail').addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('loginPass').focus(); });
+document.getElementById('loginPass').addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('loginAdminBtn').click(); });
+
+document.getElementById('adminLogoutBtn').addEventListener('click', async () => {
+  await sb.auth.signOut();
+  document.getElementById('adminApp').style.display    = 'none';
+  document.getElementById('adminLoginScreen').style.display = 'flex';
+});
+
+function showAdminApp(user) {
+  document.getElementById('adminLoginScreen').style.display = 'none';
+  document.getElementById('adminApp').style.display = 'flex';
+  document.getElementById('adminEmailDisplay').textContent = user.email;
+  newLesson();
+}
+
+// ── INIT ──────────────────────────────────────────────────────────
+(async function init() {
+  const { data: { session } } = await sb.auth.getSession();
+  if (session?.user) {
+    showAdminApp(session.user);
+  }
+})();
+</script>
+</body>
+</html>

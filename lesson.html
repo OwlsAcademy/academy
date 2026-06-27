@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title id="pageTitle">Lekcja — Owl's Academy</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.108.2/dist/umd/supabase.js"
+        integrity="sha384-nD3dwv4+ZqdYnmZKe/249ImlV04om7xTCcsoSeQYI+RO+XlKPoqAWaJR1M5SJH9p"
+        crossorigin="anonymous"></script>
+<script src="js/supabase-client.js"></script>
+<link rel="stylesheet" href="css/main.css">
+</head>
+<body>
+
+<!-- ── NAV BAR ── -->
+<nav class="nav-bar" id="navBar">
+  <a href="index.html" class="nav-back">← Wróć</a>
+  <div class="nav-divider"></div>
+  <div class="nav-tabs" id="navTabs"></div>
+  <span class="save-indicator" id="saveInd">✓ Zapisano</span>
+</nav>
+
+<!-- ── TAB PANELS rendered here ── -->
+<div id="tabPanels"></div>
+
+<footer class="lesson-footer">
+  Owl's Academy
+</footer>
+
+<!-- ── MY WORDS SIDEBAR (fixed, toggled) ── -->
+<div id="mywordsSidebar" style="
+  position:fixed;right:-320px;top:0;bottom:0;width:300px;
+  background:white;border-left:1px solid var(--border);
+  z-index:800;transition:right .3s;overflow-y:auto;padding:1.2rem;
+  box-shadow:-4px 0 20px rgba(0,0,0,.1)">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
+    <h3 style="font-size:1rem">⭐ Moje słówka</h3>
+    <button id="closeMywords" style="background:none;border:none;font-size:1.2rem;cursor:pointer;color:#aaa">✕</button>
+  </div>
+  <div id="mywordsList"></div>
+</div>
+
+<script src="js/tts.js"></script>
+<script src="js/srs.js"></script>
+<script src="js/progress.js"></script>
+<script src="js/blocks.js"></script>
+<script>
+'use strict';
+
+// ── GLOBALS ───────────────────────────────────────────────────────
+const params    = new URLSearchParams(location.search);
+const LESSON_ID = params.get('id');
+const SRS_MODE  = params.get('srs') === '1';
+const STUDENT_ID = localStorage.getItem('studentId');
+
+let lessonData = null;
+let activeTabId = null;
+
+// ── SWITCH TAB (exposed for CTA blocks) ──────────────────────────
+window.OWL = window.OWL || {};
+window.OWL.switchTab = function(tabId) {
+  const btn = document.querySelector('.nav-tab[data-tab="' + tabId + '"]');
+  if (btn) btn.click();
+};
+
+// ── HELPERS ──────────────────────────────────────────────────────
+function el(tag, cls, text) {
+  const e = document.createElement(tag);
+  if (cls) e.className = cls;
+  if (text != null) e.textContent = text;
+  return e;
+}
+
+function showToast(msg, type) {
+  const t = document.createElement('div');
+  t.className = 'toast' + (type ? ' ' + type : '');
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 3000);
+}
+
+function showSave() {
+  const ind = document.getElementById('saveInd');
+  ind.style.opacity = '1';
+  setTimeout(() => { ind.style.opacity = '0'; }, 2000);
+}
+
+// ── TTS LANGUAGE ─────────────────────────────────────────────────
+const LANG_LOCALES = {
+  en:'en-GB', pl:'pl-PL', de:'de-DE', fr:'fr-FR', es:'es-ES', it:'it-IT',
+  cs:'cs-CZ', sk:'sk-SK', ru:'ru-RU', uk:'uk-UA', nl:'nl-NL', sv:'sv-SE',
+  nb:'nb-NO', da:'da-DK', fi:'fi-FI', pt:'pt-PT', tr:'tr-TR', ar:'ar-SA',
+  zh:'zh-CN', ja:'ja-JP'
+};
+function detectLang(lesson) {
+  return LANG_LOCALES[lesson.target_lang] || 'en-GB';
+}
+
+// ── RENDER LESSON ─────────────────────────────────────────────────
+function renderLesson(lesson) {
+  lessonData = lesson;
+  const tabs = lesson.tabs || [];
+
+  document.getElementById('pageTitle').textContent = lesson.title || 'Lekcja';
+  const ttsLang = detectLang(lesson);
+
+  // Build nav tabs + panels
+  const navTabs  = document.getElementById('navTabs');
+  const panels   = document.getElementById('tabPanels');
+  navTabs.textContent = '';
+  panels.textContent  = '';
+
+  // Add "My Words" tab to nav
+  const mwBtn = el('button', 'nav-tab', '⭐ Moje słówka');
+  mwBtn.addEventListener('click', toggleMyWords);
+  navTabs.appendChild(mwBtn);
+
+  // Add "Notatki" tab
+  const notesBtn = el('button', 'nav-tab', '📝 Notatki');
+  notesBtn.addEventListener('click', () => switchToNotes());
+  navTabs.appendChild(notesBtn);
+
+  if (!tabs.length) {
+    const empty = el('div', 'tab-panel active');
+    empty.style.cssText = 'text-align:center;padding:4rem 2rem;color:var(--ink-60)';
+    empty.textContent = 'Ta lekcja nie ma jeszcze zakładek.';
+    panels.appendChild(empty);
+    return;
+  }
+
+  // Lesson header (first panel gets it)
+  let firstPanel = true;
+
+  tabs.forEach((tab, ti) => {
+    // Nav button
+    const btn = el('button', 'nav-tab' + (ti === 0 ? ' active' : ''), tab.icon ? tab.icon + ' ' + tab.name : tab.name);
+    btn.dataset.tab = tab.id;
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+      btn.classList.add('active');
+      const panel = document.getElementById('panel-' + tab.id);
+      if (panel) { panel.classList.add('active'); activeTabId = tab.id; }
+    });
+    navTabs.insertBefore(btn, mwBtn);
+
+    // Panel
+    const panel = el('div', 'tab-panel' + (ti === 0 ? ' active' : ''));
+    panel.id = 'panel-' + tab.id;
+
+    // Lesson header on first visible tab
+    if (firstPanel) {
+      firstPanel = false;
+      const hdr = el('div', 'lesson-header');
+      if (lesson.level) {
+        const badge = el('div', 'badge', lesson.level);
+        hdr.appendChild(badge);
+      }
+      const h1 = el('h1', null, lesson.title || '');
+      hdr.appendChild(h1);
+      if (lesson.subtitle) hdr.appendChild(el('p', null, lesson.subtitle));
+      panel.appendChild(hdr);
+    }
+
+    // Tab heading
+    if (tabs.length > 1) {
+      const th = el('h2', null, (tab.icon ? tab.icon + ' ' : '') + (tab.name || ''));
+      th.style.cssText = 'font-size:1.5rem;margin-bottom:1.5rem;padding-bottom:.75rem;border-bottom:2px solid var(--border)';
+      panel.appendChild(th);
+    }
+
+    // Render blocks
+    (tab.blocks || []).forEach(block => {
+      const blockEl = OWL.Blocks.render(block, { ttsLang, readOnly: false });
+      if (blockEl) panel.appendChild(blockEl);
+    });
+
+    panels.appendChild(panel);
+  });
+
+  if (tabs.length > 0) activeTabId = tabs[0].id;
+
+  // Notes panel (injected as a virtual tab)
+  renderNotesPanel(panels);
+}
+
+// ── NOTES PANEL ───────────────────────────────────────────────────
+function renderNotesPanel(panels) {
+  const panel = el('div', 'tab-panel');
+  panel.id = 'panel-notes';
+
+  const h2 = el('h2', null, '📝 Moje notatki');
+  h2.style.cssText = 'font-size:1.5rem;margin-bottom:1rem';
+  panel.appendChild(h2);
+
+  const p = el('p', null, 'Zapisuj tutaj swoje przemyślenia, nowe słówka, pytania do nauczyciela...');
+  p.style.cssText = 'color:var(--ink-60);font-size:.9rem;margin-bottom:1rem';
+  panel.appendChild(p);
+
+  const ta = document.createElement('textarea');
+  ta.className = 'notes-textarea';
+  ta.style.minHeight = '300px';
+  ta.placeholder = 'Twoje notatki...';
+  ta.value = OWL.Progress.getNotes() || '';
+
+  let noteTimer;
+  ta.addEventListener('input', () => {
+    clearTimeout(noteTimer);
+    noteTimer = setTimeout(() => {
+      OWL.Progress.setNotes(ta.value);
+      showSave();
+    }, 800);
+  });
+  panel.appendChild(ta);
+
+  panels.appendChild(panel);
+}
+
+function switchToNotes() {
+  document.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  const notesPanel = document.getElementById('panel-notes');
+  if (notesPanel) { notesPanel.classList.add('active'); activeTabId = 'notes'; }
+  // Refresh notes textarea value
+  const ta = notesPanel && notesPanel.querySelector('textarea');
+  if (ta) ta.value = OWL.Progress.getNotes() || '';
+}
+
+// ── MY WORDS ─────────────────────────────────────────────────────
+function toggleMyWords() {
+  const sidebar = document.getElementById('mywordsSidebar');
+  const isOpen  = sidebar.style.right === '0px';
+  sidebar.style.right = isOpen ? '-320px' : '0px';
+  if (!isOpen) renderMyWords();
+}
+
+function renderMyWords() {
+  const list   = document.getElementById('mywordsList');
+  const words  = OWL.Progress.getMyWords() || [];
+  list.textContent = '';
+  if (!words.length) {
+    list.appendChild(el('p', null, 'Brak zapisanych słówek. Kliknij ⭐ przy słówku, żeby je zapisać.'));
+    list.lastChild.style.cssText = 'color:var(--ink-60);font-size:.88rem';
+    return;
+  }
+  const grid = el('div', 'mywords-wrap');
+  words.forEach((w, idx) => {
+    const card = el('div', 'myword-card');
+    card.style.position = 'relative';
+    const removeBtn = document.createElement('button');
+    removeBtn.textContent = '×';
+    removeBtn.title = 'Usuń słówko';
+    removeBtn.style.cssText = 'position:absolute;top:4px;right:4px;background:none;border:none;font-size:.9rem;color:#bbb;cursor:pointer;line-height:1;padding:2px 4px;';
+    removeBtn.addEventListener('mouseenter', () => removeBtn.style.color = 'var(--coral)');
+    removeBtn.addEventListener('mouseleave', () => removeBtn.style.color = '#bbb');
+    removeBtn.addEventListener('click', () => {
+      const current = OWL.Progress.getMyWords() || [];
+      current.splice(idx, 1);
+      OWL.Progress.setMyWords(current);
+      OWL.Progress.flush();
+      showToast('Słówko usunięte.', '');
+      renderMyWords();
+    });
+    card.appendChild(removeBtn);
+    card.appendChild(el('div', 'mw-en', w.en || w.word || ''));
+    if (w.pl) card.appendChild(el('div', 'mw-pl', w.pl));
+    grid.appendChild(card);
+  });
+  list.appendChild(grid);
+}
+
+document.getElementById('closeMywords').addEventListener('click', () => {
+  document.getElementById('mywordsSidebar').style.right = '-320px';
+});
+
+// Expose save-word function for block renderers
+window.OWL.saveWord = function(word) {
+  const words = OWL.Progress.getMyWords() || [];
+  const exists = words.some(w => (w.en || w.word) === (word.en || word.word));
+  if (!exists) {
+    words.push(word);
+    OWL.Progress.setMyWords(words);
+    showSave();
+    showToast('Słówko zapisane! ⭐', 'success');
+  } else {
+    showToast('Już zapisane.', '');
+  }
+};
+
+window.OWL.showSave = showSave;
+
+// ── LOAD & INIT ───────────────────────────────────────────────────
+async function init() {
+  if (!LESSON_ID) {
+    document.body.innerHTML = '<div style="text-align:center;padding:3rem"><h2>Brak ID lekcji</h2><p><a href="index.html">← Wróć</a></p></div>';
+    return;
+  }
+
+  // Fetch lesson
+  const { data: lesson, error } = await sb
+    .from('lessons')
+    .select('id, title, subtitle, level, header_emoji, tabs')
+    .eq('id', LESSON_ID)
+    .maybeSingle();
+
+  if (error || !lesson) {
+    document.body.innerHTML = '<div style="text-align:center;padding:3rem"><h2>Lekcja nie znaleziona</h2><p><a href="index.html">← Wróć</a></p></div>';
+    return;
+  }
+
+  // Load progress (if student logged in)
+  if (STUDENT_ID) {
+    await OWL.Progress.load(LESSON_ID, STUDENT_ID);
+  }
+
+  renderLesson(lesson);
+
+  // If SRS mode, jump to first flashcard tab
+  if (SRS_MODE) {
+    const tabs = lesson.tabs || [];
+    const fcTab = tabs.find(t => (t.blocks || []).some(b => b.type === 'flashcards'));
+    if (fcTab) {
+      const btn = document.querySelector('.nav-tab[data-tab="' + fcTab.id + '"]');
+      if (btn) btn.click();
+    }
+  }
+}
+
+init();
+</script>
+</body>
+</html>

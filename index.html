@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Owl's Academy</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.108.2/dist/umd/supabase.js"
+        integrity="sha384-nD3dwv4+ZqdYnmZKe/249ImlV04om7xTCcsoSeQYI+RO+XlKPoqAWaJR1M5SJH9p"
+        crossorigin="anonymous"></script>
+<script src="js/supabase-client.js"></script>
+<link rel="stylesheet" href="css/main.css">
+</head>
+<body>
+
+<!-- ── LOGIN SCREEN ── -->
+<div id="loginScreen" class="portal-hero">
+  <div class="portal-hero-inner">
+    <div class="portal-logo">🦉</div>
+    <h1 class="portal-title">Owl's Academy</h1>
+    <p class="portal-sub">Twoja platforma językowa</p>
+    <div class="login-card">
+      <label for="codeInput">Wpisz swój kod dostępu:</label>
+      <input type="text" id="codeInput" placeholder="np. anna2024"
+             autocomplete="off" autocapitalize="none" spellcheck="false">
+      <button class="login-btn" id="loginBtn">Wejdź →</button>
+      <div class="login-err" id="loginErr"></div>
+    </div>
+    <p class="portal-note">Nie pamiętasz kodu? Skontaktuj się z nauczycielem.</p>
+  </div>
+</div>
+
+<!-- ── DASHBOARD ── -->
+<div id="dashboardScreen" style="display:none">
+
+  <!-- Header -->
+  <div style="background:var(--ink);padding:12px 1.5rem;display:flex;align-items:center;justify-content:space-between">
+    <div style="display:flex;align-items:center;gap:.6rem">
+      <span style="font-size:1.4rem">🦉</span>
+      <span style="font-family:var(--font-serif);color:white;font-size:1.1rem">Owl's Academy</span>
+    </div>
+    <button class="logout-btn" id="logoutBtn" style="color:rgba(255,255,255,.5);border-color:rgba(255,255,255,.2)">← Zmień kod</button>
+  </div>
+
+  <div class="dashboard">
+
+    <!-- Greeting -->
+    <div class="dash-header">
+      <h2 class="dash-greeting" id="greetingHdr">Twoje lekcje</h2>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats-strip" id="statsStrip" style="display:none">
+      <div class="stat-card">
+        <span class="stat-val" id="statStreak">0</span>
+        <span class="stat-lbl">🔥 Streak</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-val" id="statWords">0</span>
+        <span class="stat-lbl">📚 Słówka</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-val" id="statDone">0</span>
+        <span class="stat-lbl">✅ Lekcje</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-val" id="statXP">0</span>
+        <span class="stat-lbl">⭐ XP</span>
+      </div>
+    </div>
+
+    <!-- SRS review banner -->
+    <div class="srs-banner" id="srsBanner" style="display:none">
+      <p>Masz <span id="srsDueCount">0</span> fiszek do powtórzenia dziś!</p>
+      <button class="srs-go-btn" id="srsGoBtn">Powtórz teraz →</button>
+    </div>
+
+    <!-- Lessons -->
+    <p class="section-hdr">📖 Twoje lekcje</p>
+    <div id="lessonsList"></div>
+
+  </div>
+
+  <footer style="text-align:center;padding:2rem;color:var(--ink-30);font-size:.8rem">
+    Owl's Academy &mdash; <a href="admin.html">Panel nauczyciela</a>
+  </footer>
+</div>
+
+<script>
+// ── HELPERS ──────────────────────────────────────────────────────
+function el(tag, cls, text) {
+  const e = document.createElement(tag);
+  if (cls) e.className = cls;
+  if (text != null) e.textContent = text;
+  return e;
+}
+
+function showToast(msg, type = '') {
+  const t = document.createElement('div');
+  t.className = 'toast' + (type ? ' ' + type : '');
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 3200);
+}
+
+// ── LOGIN ─────────────────────────────────────────────────────────
+async function loadStudent(code) {
+  const errEl = document.getElementById('loginErr');
+  errEl.style.display = 'none';
+
+  try {
+    const { data: students, error } = await sb
+      .from('students')
+      .select('id, name, code, prefix, last_active, streak_days, xp')
+      .ilike('code', code);
+    if (error) throw error;
+
+    const found = (students || []).find(s => s.code.toLowerCase() === code.toLowerCase());
+    if (!found) {
+      errEl.textContent = '❌ Nieprawidłowy kod dostępu. Sprawdź pisownię lub skontaktuj się z nauczycielem.';
+      errEl.style.display = 'block';
+      return;
+    }
+
+    localStorage.setItem('studentCode', found.code);
+    localStorage.setItem('studentId',   found.id);
+    localStorage.setItem('studentName', found.name);
+
+    // Update streak
+    const today = new Date().toISOString().slice(0, 10);
+    const last  = found.last_active;
+    let streak  = found.streak_days || 0;
+    if (last !== today) {
+      const yesterday = new Date();
+      yesterday.setDate(yesterday.getDate() - 1);
+      const yday = yesterday.toISOString().slice(0, 10);
+      if (last === yday) streak++;
+      else if (!last || last < yday) streak = 1;
+      await sb.from('students').update({ last_active: today, streak_days: streak })
+              .eq('id', found.id);
+    }
+
+    found.streak_days = streak;
+    await showDashboard(found);
+  } catch(e) {
+    errEl.textContent = '⚠️ Błąd: ' + e.message;
+    errEl.style.display = 'block';
+  }
+}
+
+// ── DASHBOARD ─────────────────────────────────────────────────────
+async function showDashboard(student) {
+  document.getElementById('loginScreen').style.display    = 'none';
+  document.getElementById('dashboardScreen').style.display = 'block';
+
+  const name = student.name || localStorage.getItem('studentName') || '';
+  document.getElementById('greetingHdr').innerHTML =
+    'Cześć, <span>' + name + '</span>! 👋 Twoje lekcje:';
+
+  // Load assignments
+  const sid = student.id || localStorage.getItem('studentId');
+  const { data: asgn } = await sb
+    .from('student_lessons')
+    .select('lesson_id, lesson_order, available_from, due_date, lessons(id, title, subtitle, level, header_emoji, tabs)')
+    .eq('student_id', sid)
+    .order('lesson_order', { ascending: true });
+
+  const now = new Date().toISOString();
+  const lessons = (asgn || [])
+    .filter(a => a.lessons)
+    .map(a => ({
+      id:           a.lessons.id,
+      title:        a.lessons.title,
+      subtitle:     a.lessons.subtitle,
+      level:        a.lessons.level,
+      emoji:        a.lessons.header_emoji || '📖',
+      tabs:         a.lessons.tabs || [],
+      lessonOrder:  a.lesson_order,
+      available:    !a.available_from || a.available_from <= now,
+      dueDate:      a.due_date
+    }));
+
+  // Load progress for all lessons
+  let progressMap = {};
+  if (lessons.length) {
+    const ids = lessons.map(l => l.id);
+    const { data: progs } = await sb
+      .from('lesson_progress')
+      .select('lesson_id, block_progress, srs_data')
+      .eq('student_id', sid)
+      .in('lesson_id', ids);
+    (progs || []).forEach(p => { progressMap[p.lesson_id] = p; });
+  }
+
+  // Stats
+  let totalWords = 0, totalDone = 0, totalSrsDue = 0;
+  lessons.forEach(l => {
+    const prog = progressMap[l.id];
+    if (prog) {
+      const bp = prog.block_progress || {};
+      const bpKeys = Object.keys(bp);
+      if (bpKeys.length > 0) totalDone++;
+
+      // Count SRS due
+      const srs = prog.srs_data || {};
+      const today = new Date().toISOString().slice(0, 10);
+      Object.values(srs).forEach(card => {
+        if (!card.nextReview || card.nextReview <= today) totalSrsDue++;
+      });
+
+      // Count saved words
+      totalWords += Object.keys(srs).length;
+    }
+  });
+
+  const streak = student.streak_days || parseInt(localStorage.getItem('studentStreak') || '0');
+  const xp     = student.xp || 0;
+
+  if (streak || totalWords || totalDone || xp) {
+    document.getElementById('statsStrip').style.display = 'grid';
+    document.getElementById('statStreak').textContent = streak;
+    document.getElementById('statWords').textContent  = totalWords;
+    document.getElementById('statDone').textContent   = totalDone;
+    document.getElementById('statXP').textContent     = xp;
+  }
+
+  if (totalSrsDue > 0) {
+    document.getElementById('srsBanner').style.display = 'flex';
+    document.getElementById('srsDueCount').textContent = totalSrsDue;
+    document.getElementById('srsGoBtn').addEventListener('click', () => {
+      // Navigate to first lesson with due cards
+      const firstDue = lessons.find(l => {
+        const prog = progressMap[l.id];
+        if (!prog) return false;
+        const today = new Date().toISOString().slice(0, 10);
+        return Object.values(prog.srs_data || {}).some(c => !c.nextReview || c.nextReview <= today);
+      });
+      if (firstDue) window.location.href = 'lesson.html?id=' + firstDue.id + '&srs=1';
+    });
+  }
+
+  renderLessons(lessons, progressMap);
+}
+
+const LANG_FLAGS = {
+  en:'🇬🇧', pl:'🇵🇱', de:'🇩🇪', fr:'🇫🇷', es:'🇪🇸', it:'🇮🇹',
+  cs:'🇨🇿', sk:'🇸🇰', ru:'🇷🇺', uk:'🇺🇦', nl:'🇳🇱', sv:'🇸🇪',
+  nb:'🇳🇴', da:'🇩🇰', fi:'🇫🇮', pt:'🇵🇹', tr:'🇹🇷', ar:'🇸🇦',
+  zh:'🇨🇳', ja:'🇯🇵'
+};
+const LANG_NAMES = {
+  en:'Angielski', pl:'Polski', de:'Niemiecki', fr:'Francuski', es:'Hiszpański',
+  it:'Włoski', cs:'Czeski', sk:'Słowacki', ru:'Rosyjski', uk:'Ukraiński',
+  nl:'Niderlandzki', sv:'Szwedzki', nb:'Norweski', da:'Duński', fi:'Fiński',
+  pt:'Portugalski', tr:'Turecki', ar:'Arabski', zh:'Chiński', ja:'Japoński'
+};
+
+function renderLessons(lessons, progressMap) {
+  const list = document.getElementById('lessonsList');
+  list.textContent = '';
+
+  if (!lessons.length) {
+    const wrap = el('div', 'no-lessons');
+    wrap.appendChild(el('p', null, 'Brak lekcji.'));
+    wrap.appendChild(el('p', null, 'Skontaktuj się z nauczycielem.'));
+    list.appendChild(wrap);
+    return;
+  }
+
+  lessons.forEach(l => {
+    const prog = progressMap[l.id];
+    const bp   = prog ? prog.block_progress || {} : {};
+    const totalBlocks = (l.tabs || []).reduce((s, t) => s + (t.blocks || []).length, 0);
+    const doneBlocks  = Object.keys(bp).length;
+    const pct = totalBlocks > 0 ? Math.round(doneBlocks / totalBlocks * 100) : 0;
+
+    const a = document.createElement('a');
+    a.className = 'lesson-card' + (!l.available ? ' locked' : '') + (pct === 100 ? ' done' : '');
+    a.href = l.available ? 'lesson.html?id=' + encodeURIComponent(l.id) : '#';
+
+    const emojiDiv = el('div', 'lc-emoji', l.emoji || '📖');
+    const info     = el('div', 'lc-info');
+
+    const title = el('div', 'lc-title', 'Lekcja ' + (l.lessonOrder || '') + ': ' + (l.title || ''));
+    if (l.subtitle) info.appendChild(el('div', 'lc-sub', l.subtitle));
+
+    const meta = el('div', 'lc-meta');
+    if (l.target_lang) meta.appendChild(el('span', 'chip lang', LANG_FLAGS[l.target_lang] || '🌐'));
+    if (l.level)       meta.appendChild(el('span', 'chip level', l.level));
+    if (!l.available)  meta.appendChild(el('span', 'chip coral', '🔒 Niedostępna'));
+    if (l.dueDate) {
+      const due = new Date(l.dueDate);
+      const today = new Date();
+      const diff = Math.round((due - today) / 86400000);
+      if (diff <= 3) meta.appendChild(el('span', 'chip coral', diff <= 0 ? '⏰ Termin minął' : `⏰ Za ${diff} dni`));
+    }
+    (l.tabs || []).forEach(t => {
+      if (t.name) meta.appendChild(el('span', 'chip', t.name));
+    });
+
+    info.insertBefore(title, info.firstChild);
+    info.appendChild(meta);
+
+    const progressDiv = el('div', 'lc-progress');
+    if (pct > 0 || doneBlocks > 0) {
+      progressDiv.appendChild(el('div', 'lc-pct', pct + '%'));
+    }
+
+    a.appendChild(emojiDiv);
+    a.appendChild(info);
+    a.appendChild(progressDiv);
+    a.appendChild(el('div', null, '→'));
+    a.lastChild.style.cssText = 'color:var(--ink-30);font-size:1.2rem';
+    list.appendChild(a);
+  });
+}
+
+// ── EVENTS ────────────────────────────────────────────────────────
+document.getElementById('loginBtn').addEventListener('click', async () => {
+  const code = document.getElementById('codeInput').value.trim();
+  if (!code) return;
+  const btn = document.getElementById('loginBtn');
+  btn.textContent = 'Szukam...'; btn.disabled = true;
+  await loadStudent(code);
+  btn.textContent = 'Wejdź →'; btn.disabled = false;
+});
+
+document.getElementById('codeInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') document.getElementById('loginBtn').click();
+});
+
+document.getElementById('logoutBtn').addEventListener('click', () => {
+  localStorage.removeItem('studentCode');
+  localStorage.removeItem('studentId');
+  localStorage.removeItem('studentName');
+  location.reload();
+});
+
+// ── AUTO-LOGIN ────────────────────────────────────────────────────
+const savedCode = localStorage.getItem('studentCode');
+if (savedCode) {
+  document.getElementById('codeInput').value = savedCode;
+  loadStudent(savedCode);
+}
+</script>
+</body>
+</html>
