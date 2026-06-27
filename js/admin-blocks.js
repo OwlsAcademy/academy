@@ -327,8 +327,8 @@ window.OWL = window.OWL || {};
     wyr: { title: '', questions: [{ a: '', b: '', hint: '' }] },
     ranking: { title: '', instruction: '', items: [''] },
     debate: { title: '', motions: [''], timer: 120 },
-    monologue: { title: '', timer: 120, prompts: [''] },
-    pairs: { title: '', activities: [{ roleA: '', roleB: '', situation: '' }] },
+    monologue: { title: '', timer: 120, prompts: [{ text: '', tip: '' }], usefulLanguage: '' },
+    pairs: { title: '', activities: [{ title: '', badge: 'pair', instructions: '', items: [], time: '' }], usefulLanguage: '' },
     idiomtasks: { title: '', idioms: [''], tasks: [{ task: '' }] },
     idiomstory: { title: '', starters: [''], idioms: [''] },
     checklist: { title: '', items: [''] },
@@ -1117,7 +1117,20 @@ window.OWL = window.OWL || {};
       wrap.appendChild(field('Tytuł', textInput(data.title, 'Tytuł', v => onChange({ ...data, title: v }))));
       wrap.appendChild(field('Timer (sekundy)', numberInput(data.timer, '120', v => onChange({ ...data, timer: v }))));
       wrap.appendChild(el('div', { class: 'ab-section-label' }, 'Prompty'));
-      wrap.appendChild(stringList(data.prompts, 'Prompt do monologu...', v => onChange({ ...data, prompts: v }), 'Dodaj prompt'));
+      const prompts = (data.prompts || []).map(p => typeof p === 'string' ? { text: p, tip: '' } : p);
+      wrap.appendChild(dynamicList(
+        prompts,
+        (item, i, update, remove) => {
+          const box = el('div', { class: 'ab-pairs-item' });
+          box.appendChild(field('Prompt', textArea(item.text, 'Treść promptu...', v => update({ ...item, text: v }))));
+          box.appendChild(field('Wskazówka', textInput(item.tip, 'Krótka wskazówka (opcjonalnie)...', v => update({ ...item, tip: v }))));
+          box.appendChild(btn('✕ Usuń', 'ab-btn-remove', remove));
+          return box;
+        },
+        v => onChange({ ...data, prompts: v }),
+        'Dodaj prompt'
+      ));
+      wrap.appendChild(field('Przydatne zwroty', textArea(data.usefulLanguage || '', 'np. I usually... / First I... / Then...', v => onChange({ ...data, usefulLanguage: v }))));
       return wrap;
     },
 
@@ -1126,18 +1139,31 @@ window.OWL = window.OWL || {};
       wrap.appendChild(field('Tytuł', textInput(data.title, 'Tytuł', v => onChange({ ...data, title: v }))));
       wrap.appendChild(el('div', { class: 'ab-section-label' }, 'Aktywności'));
       wrap.appendChild(dynamicList(
-        data.activities,
+        data.activities || [],
         (item, i, update, remove) => {
           const box = el('div', { class: 'ab-pairs-item' });
-          box.appendChild(field('Rola A', textInput(item.roleA, 'Rola A', v => update({ ...item, roleA: v }))));
-          box.appendChild(field('Rola B', textInput(item.roleB, 'Rola B', v => update({ ...item, roleB: v }))));
-          box.appendChild(field('Sytuacja', textArea(item.situation, 'Opis sytuacji...', v => update({ ...item, situation: v }))));
-          box.appendChild(btn('✕ Usuń', 'ab-btn-remove', remove));
+          box.appendChild(field('Tytuł aktywności', textInput(item.title || '', 'np. Scenka: Klient i kasjer', v => update({ ...item, title: v }))));
+          box.appendChild(field('Instrukcje', textArea(item.instructions || '', 'Opis zadania dla uczniów...', v => update({ ...item, instructions: v }))));
+          box.appendChild(el('div', { class: 'ab-section-label' }, 'Role / scenariusze'));
+          box.appendChild(stringList(item.items || [], 'np. Klient: zamawia produkty...', v => update({ ...item, items: v }), 'Dodaj rolę'));
+          const row = el('div', { style: { display: 'flex', gap: '8px' } });
+          const badgeSel = el('select', { style: { padding: '6px 8px', border: '1.5px solid var(--border)', borderRadius: 'var(--radius-sm)', fontSize: '.85rem' } });
+          [['pair', 'Para'], ['group', 'Grupa'], ['class', 'Klasa']].forEach(([v, l]) => {
+            const o = el('option', { value: v }, l);
+            if (item.badge === v) o.selected = true;
+            badgeSel.appendChild(o);
+          });
+          badgeSel.addEventListener('change', () => update({ ...item, badge: badgeSel.value }));
+          row.appendChild(field('Format', badgeSel));
+          row.appendChild(field('Czas', textInput(item.time || '', 'np. 5 min', v => update({ ...item, time: v }))));
+          box.appendChild(row);
+          box.appendChild(btn('✕ Usuń aktywność', 'ab-btn-remove', remove));
           return box;
         },
         v => onChange({ ...data, activities: v }),
         'Dodaj aktywność'
       ));
+      wrap.appendChild(field('Przydatne zwroty', textArea(data.usefulLanguage || '', 'np. Can you help me? / I would like...', v => onChange({ ...data, usefulLanguage: v }))));
       return wrap;
     },
 
