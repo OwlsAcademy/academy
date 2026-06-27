@@ -410,12 +410,27 @@
         <select id="aiModelSelect" style="padding:8px 10px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:.88rem;width:100%"></select>
       </div>
     </div>
-    <div class="modal-actions">
+    <div class="modal-actions" id="aiActionsSetup">
       <button class="btn btn-primary" id="aiDirectBtn">⚡ Generuj bezpośrednio</button>
       <button class="btn btn-ghost" id="aiCopyPromptBtn">📋 Kopiuj prompt</button>
       <button class="btn btn-ghost" id="aiModalCloseBtn">Anuluj</button>
     </div>
+    <div class="modal-actions" id="aiActionsRefine" style="display:none">
+      <button class="btn btn-ghost" id="aiRestartBtn">↺ Generuj od nowa</button>
+      <button class="btn btn-primary" id="aiFinishBtn">✓ Zakończ i zamknij</button>
+    </div>
     <div id="aiStatus" style="margin-top:1rem;font-size:.86rem;color:var(--ink-60);display:none"></div>
+    <div id="aiRefineSection" style="display:none;margin-top:1rem;border-top:1px solid var(--border);padding-top:1rem">
+      <div id="aiRefineInfo" style="font-size:.82rem;font-weight:600;color:var(--ink);margin-bottom:.6rem"></div>
+      <div id="aiRefineHistory" style="margin-bottom:.6rem;max-height:110px;overflow-y:auto"></div>
+      <div style="display:flex;gap:6px;align-items:flex-end">
+        <textarea id="aiRefineInput" rows="2"
+          placeholder="np. Dodaj więcej fiszek, zmień artykuł na dłuższy, przenieś gramatykę na poziom B2..."
+          style="flex:1;padding:8px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:.86rem;resize:vertical"></textarea>
+        <button class="btn btn-primary btn-sm" id="aiRefineBtn" style="white-space:nowrap">↩ Wyślij</button>
+      </div>
+      <div style="font-size:.75rem;color:var(--ink-60);margin-top:4px">Ctrl+Enter — wyślij</div>
+    </div>
   </div>
 </div>
 
@@ -1546,7 +1561,130 @@ document.getElementById('aiGenBtn').addEventListener('click', async () => {
 });
 
 document.getElementById('aiModalCloseBtn').addEventListener('click', () => {
+  resetToInitMode();
   document.getElementById('aiModal').classList.remove('open');
+});
+
+// ── AI CONVERSATION STATE & REFINE HELPERS ────────────────────────
+let aiConversation = [];
+let aiActiveModel  = '';
+let aiRefineCount  = 0;
+
+function switchToRefineMode() {
+  document.getElementById('aiActionsSetup').style.display  = 'none';
+  document.getElementById('aiActionsRefine').style.display = 'flex';
+  document.getElementById('aiRefineSection').style.display = 'block';
+  document.getElementById('aiModelSelect').disabled = true;
+  updateRefineInfo();
+}
+
+function resetToInitMode() {
+  aiConversation = []; aiActiveModel = ''; aiRefineCount = 0;
+  document.getElementById('aiActionsSetup').style.display  = 'flex';
+  document.getElementById('aiActionsRefine').style.display = 'none';
+  document.getElementById('aiRefineSection').style.display = 'none';
+  document.getElementById('aiRefineHistory').textContent   = '';
+  document.getElementById('aiRefineInput').value           = '';
+  document.getElementById('aiModelSelect').disabled = false;
+  document.getElementById('aiStatus').style.display = 'none';
+}
+
+function updateRefineInfo() {
+  const modelLabel = aiActiveModel === 'gemini' ? 'Gemini' : 'Claude';
+  const t = aiRefineCount - 1;
+  const tLabel = t === 0 ? 'wygenerowano'
+    : `${t} ${t === 1 ? 'korekta' : t < 5 ? 'korekty' : 'korekt'}`;
+  document.getElementById('aiRefineInfo').textContent =
+    `✓ Lekcja załadowana · ${modelLabel} · ${tLabel}`;
+}
+
+document.getElementById('aiRestartBtn').addEventListener('click', () => resetToInitMode());
+
+document.getElementById('aiFinishBtn').addEventListener('click', () => {
+  resetToInitMode();
+  document.getElementById('aiModal').classList.remove('open');
+});
+
+document.getElementById('aiRefineInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+    e.preventDefault();
+    document.getElementById('aiRefineBtn').click();
+  }
+});
+
+document.getElementById('aiRefineBtn').addEventListener('click', async () => {
+  const input = document.getElementById('aiRefineInput').value.trim();
+  if (!input) return;
+
+  const statusEl  = document.getElementById('aiStatus');
+  const refineBtn = document.getElementById('aiRefineBtn');
+  statusEl.style.display = 'block';
+  statusEl.textContent   = '⏳ Doszczegóławiam lekcję...';
+  refineBtn.disabled = true;
+
+  const refineMsg = `Zmodyfikuj lekcję zgodnie z poniższą prośbą i zwróć TYLKO pełny zaktualizowany JSON (bez markdown, bez komentarzy, sam obiekt {}):\n\n${input}`;
+  aiConversation.push({ role: 'user', text: refineMsg });
+
+  try {
+    const { data: cfg } = await sb.from('config').select('anthropic_api_key, gemini_api_key').eq('id', 1).maybeSingle();
+    let text;
+
+    if (aiActiveModel === 'gemini') {
+      const key = cfg?.gemini_api_key;
+      if (!key) throw new Error('Brak klucza Gemini API.');
+      const contents = aiConversation.map(m => ({
+        role: m.role === 'assistant' ? 'model' : 'user',
+        parts: [{ text: m.text }]
+      }));
+      const res = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`,
+        { method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ contents, generationConfig: { maxOutputTokens: 8192 } }) }
+      );
+      if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.error?.message || 'Błąd Gemini: ' + res.status); }
+      const result = await res.json();
+      text = result.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    } else {
+      const key = cfg?.anthropic_api_key;
+      if (!key) throw new Error('Brak klucza Anthropic API.');
+      const messages = aiConversation.map(m => ({ role: m.role, content: m.text }));
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-api-key': key,
+                   'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+        body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 8192, messages })
+      });
+      if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.error?.message || 'Błąd Anthropic: ' + res.status); }
+      const result = await res.json();
+      text = result.content?.[0]?.text || '';
+    }
+
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) throw new Error('Nie znaleziono JSON w odpowiedzi AI.');
+    loadJsonLesson(JSON.parse(jsonMatch[0]));
+
+    aiConversation.push({ role: 'assistant', text });
+    aiRefineCount++;
+
+    const histEl = document.getElementById('aiRefineHistory');
+    const entry  = el('div');
+    entry.style.cssText = 'padding:3px 0 3px 7px;border-left:2px solid var(--border);margin-bottom:4px;font-size:.79rem;color:var(--ink-60)';
+    entry.textContent   = `${aiRefineCount - 1}. ${input.length > 90 ? input.slice(0, 90) + '…' : input}`;
+    histEl.appendChild(entry);
+    histEl.scrollTop = histEl.scrollHeight;
+
+    document.getElementById('aiRefineInput').value = '';
+    updateRefineInfo();
+    statusEl.textContent = `✓ Lekcja zaktualizowana (korekta ${aiRefineCount - 1}) — doprecyzuj dalej lub zamknij.`;
+    showToast('Lekcja zaktualizowana ✓', 'success');
+  } catch(e) {
+    aiConversation.pop();
+    statusEl.textContent = '❌ Błąd: ' + e.message;
+    console.error(e);
+  } finally {
+    refineBtn.disabled = false;
+    document.getElementById('aiRefineInput').focus();
+  }
 });
 
 document.getElementById('aiCopyPromptBtn').addEventListener('click', async () => {
@@ -1619,7 +1757,11 @@ document.getElementById('aiDirectBtn').addEventListener('click', async () => {
 
     const parsed = JSON.parse(jsonMatch[0]);
     loadJsonLesson(parsed);
-    document.getElementById('aiModal').classList.remove('open');
+    aiConversation = [{ role: 'user', text: prompt }, { role: 'assistant', text }];
+    aiActiveModel  = model;
+    aiRefineCount  = 1;
+    switchToRefineMode();
+    statusEl.textContent = '✓ Lekcja załadowana — doprecyzuj poniżej lub zamknij.';
     showToast('Lekcja wygenerowana! Sprawdź i zapisz. ✓', 'success');
   } catch(e) {
     statusEl.textContent = '❌ Błąd: ' + e.message;
