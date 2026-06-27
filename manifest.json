@@ -1,0 +1,19 @@
+{
+  "name": "Owl's Academy",
+  "short_name": "Owl's",
+  "description": "Platforma językowa — lekcje, fiszki, SRS",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#faf7f2",
+  "theme_color": "#1a1410",
+  "lang": "pl",
+  "icons": [
+    {
+      "src": "icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
