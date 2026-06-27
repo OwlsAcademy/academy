@@ -202,13 +202,10 @@
         <h2>🦉 Postępy uczniów</h2>
       </div>
       <div class="admin-card">
-        <div class="two-field" style="margin-bottom:1rem">
-          <div class="field"><label>Uczeń</label>
-            <select id="progressStudentFilter"><option value="">— wybierz ucznia —</option></select></div>
-          <div class="field"><label>Lekcja</label>
-            <select id="progressLessonFilter"><option value="">— wybierz lekcję —</option></select></div>
+        <div class="field" style="margin-bottom:0">
+          <label>Uczeń</label>
+          <select id="progressStudentFilter"><option value="">— wybierz ucznia —</option></select>
         </div>
-        <button class="btn btn-primary btn-sm" id="loadProgressBtn">Załaduj postęp</button>
       </div>
       <div id="progressDisplay"></div>
     </section>
@@ -498,6 +495,7 @@ function setMetadata(lesson) {
 
 function newLesson() {
   currentLessonId = null;
+  activeAdminTabId = null;
   lessonTabs = defaultTabs();
   document.getElementById('lessonTitle').value           = '';
   document.getElementById('lessonSubtitle').value        = '';
@@ -982,168 +980,139 @@ document.getElementById('saveAssignBtn').addEventListener('click', async () => {
 
 // ── PROGRESS ──────────────────────────────────────────────────────
 async function populateProgressFilters() {
-  const [{ data: students }, { data: lessons }] = await Promise.all([
-    sb.from('students').select('id, name').order('name'),
-    sb.from('lessons').select('id, title').order('created_at', { ascending: false })
-  ]);
-
+  const { data: students } = await sb.from('students').select('id, name').order('name');
   const sf = document.getElementById('progressStudentFilter');
-  const lf = document.getElementById('progressLessonFilter');
-  const currentS = sf.value, currentL = lf.value;
-  sf.textContent = ''; lf.textContent = '';
+  const currentS = sf.value;
+  sf.textContent = '';
   sf.appendChild(new Option('— wybierz ucznia —', ''));
-  lf.appendChild(new Option('— wybierz lekcję —', ''));
   (students || []).forEach(s => sf.appendChild(new Option(s.name, s.id)));
-  (lessons  || []).forEach(l => lf.appendChild(new Option(l.title || '(bez tytułu)', l.id)));
-  if (currentS) sf.value = currentS;
-  if (currentL) lf.value = currentL;
+  if (currentS) { sf.value = currentS; if (sf.value) loadAllStudentProgress(sf.value); }
 }
 
-document.getElementById('loadProgressBtn').addEventListener('click', async () => {
+document.getElementById('progressStudentFilter').addEventListener('change', () => {
   const sid = document.getElementById('progressStudentFilter').value;
-  const lid = document.getElementById('progressLessonFilter').value;
-  if (!sid || !lid) return showToast('Wybierz ucznia i lekcję.', '');
+  if (sid) loadAllStudentProgress(sid);
+  else document.getElementById('progressDisplay').textContent = '';
+});
 
-  const { data: prog, error } = await sb
-    .from('lesson_progress')
-    .select('*')
-    .eq('student_id', sid)
-    .eq('lesson_id', lid)
-    .maybeSingle();
-
+async function loadAllStudentProgress(sid) {
   const display = document.getElementById('progressDisplay');
   display.textContent = '';
+  const loading = el('p', null, 'Ładowanie...');
+  loading.style.cssText = 'color:var(--ink-60);padding:1rem 0';
+  display.appendChild(loading);
 
-  if (error) { display.appendChild(el('p', null, 'Błąd: ' + error.message)); return; }
-  if (!prog) { display.appendChild(el('p', null, 'Brak danych postępu dla tej kombinacji.')); return; }
+  const [{ data: assigned, error: aErr }, { data: progList }] = await Promise.all([
+    sb.from('student_lessons')
+      .select('lesson_order, lessons(id, title, subtitle, level, header_emoji)')
+      .eq('student_id', sid)
+      .order('lesson_order'),
+    sb.from('lesson_progress').select('*').eq('student_id', sid)
+  ]);
 
-  const card = el('div', 'admin-card');
+  display.textContent = '';
 
-  // SRS stats
-  const srs = prog.srs_data || {};
-  const today = new Date().toISOString().slice(0, 10);
-  const due   = Object.values(srs).filter(c => !c.nextReview || c.nextReview <= today).length;
-  const total = Object.keys(srs).length;
-  const statsHtml = el('div');
-  statsHtml.innerHTML = `
-    <p style="margin-bottom:6px"><b>Fiszki SRS:</b> ${total} łącznie, ${due} do powtórki dziś</p>
-    <p style="margin-bottom:6px"><b>Bloki z postępem:</b> ${Object.keys(prog.block_progress || {}).length}</p>
-    <p style="margin-bottom:6px"><b>Moje słówka:</b> ${(prog.mywords || []).length}</p>
-    <p style="margin-bottom:12px"><b>Ostatnia aktualizacja:</b> ${prog.updated_at ? new Date(prog.updated_at).toLocaleString('pl-PL') : '—'}</p>
-  `;
-  card.appendChild(statsHtml);
-
-  // My Words management
-  const mwSection = el('div');
-  mwSection.style.cssText = 'margin-bottom:1.2rem;';
-  const mwHeader = el('div');
-  mwHeader.style.cssText = 'display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;';
-  mwHeader.appendChild(Object.assign(el('p', null, '⭐ Moje słówka ucznia:'), { style: { cssText: 'font-weight:600;font-size:.86rem;color:var(--ink-60);margin:0' } }));
-  mwSection.appendChild(mwHeader);
-
-  let mwWords = JSON.parse(JSON.stringify(prog.mywords || []));
-
-  function renderAdminMyWords() {
-    const existing = mwSection.querySelector('.mw-admin-list');
-    if (existing) existing.remove();
-    const list = el('div');
-    list.className = 'mw-admin-list';
-    list.style.cssText = 'display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;min-height:32px;';
-    if (!mwWords.length) {
-      const empty = el('span', null, 'Brak słówek');
-      empty.style.cssText = 'color:var(--ink-60);font-size:.82rem;';
-      list.appendChild(empty);
-    }
-    mwWords.forEach((w, i) => {
-      const chip = el('div');
-      chip.style.cssText = 'display:flex;align-items:center;gap:4px;background:var(--cream);border:1px solid var(--border);border-radius:20px;padding:3px 8px 3px 10px;font-size:.82rem;';
-      const txt = el('span', null, (w.en || w.word || '') + (w.pl ? ' / ' + w.pl : ''));
-      const del = el('button', null, '×');
-      del.style.cssText = 'background:none;border:none;cursor:pointer;color:#aaa;font-size:.9rem;padding:0 2px;line-height:1;';
-      del.addEventListener('click', () => { mwWords.splice(i, 1); renderAdminMyWords(); });
-      chip.appendChild(txt); chip.appendChild(del);
-      list.appendChild(chip);
-    });
-    mwSection.insertBefore(list, mwSection.querySelector('.mw-add-row'));
+  if (aErr) { display.appendChild(el('p', null, 'Błąd: ' + aErr.message)); return; }
+  if (!assigned || !assigned.length) {
+    display.appendChild(el('p', null, 'Ten uczeń nie ma przypisanych żadnych lekcji.'));
+    return;
   }
 
-  // Add word row
-  const addRow = el('div');
-  addRow.className = 'mw-add-row';
-  addRow.style.cssText = 'display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:8px;';
-  const mwEnInp = document.createElement('input'); mwEnInp.placeholder = 'Angielski'; mwEnInp.className = 'form-input'; mwEnInp.style.cssText = 'width:130px;padding:5px 8px;font-size:.82rem;';
-  const mwPlInp = document.createElement('input'); mwPlInp.placeholder = 'Polski (opcj.)'; mwPlInp.className = 'form-input'; mwPlInp.style.cssText = 'width:130px;padding:5px 8px;font-size:.82rem;';
-  const mwAddBtn = el('button', 'btn btn-sm', '+ Dodaj');
-  mwAddBtn.style.cssText = 'padding:5px 12px;font-size:.82rem;';
-  mwAddBtn.addEventListener('click', () => {
-    const en = mwEnInp.value.trim();
-    if (!en) return;
-    if (!mwWords.some(w => (w.en || w.word) === en)) mwWords.push({ en, pl: mwPlInp.value.trim() });
-    mwEnInp.value = ''; mwPlInp.value = '';
-    renderAdminMyWords();
-  });
-  addRow.appendChild(mwEnInp); addRow.appendChild(mwPlInp); addRow.appendChild(mwAddBtn);
-  mwSection.appendChild(addRow);
-  renderAdminMyWords();
+  const progMap = {};
+  (progList || []).forEach(p => { progMap[p.lesson_id] = p; });
+  const today = new Date().toISOString().slice(0, 10);
 
-  const mwSave = el('button', 'btn btn-primary btn-sm', 'Zapisz słówka');
-  mwSave.style.cssText = 'font-size:.82rem;';
-  mwSave.addEventListener('click', async () => {
-    const { error } = await sb.from('lesson_progress').upsert(
-      { student_id: sid, lesson_id: lid, mywords: mwWords },
-      { onConflict: 'student_id,lesson_id' }
-    );
-    if (error) showToast('Błąd: ' + error.message, 'error');
-    else showToast('Słówka zapisane ✓', 'success');
-  });
-  mwSection.appendChild(mwSave);
-  card.appendChild(mwSection);
+  assigned.forEach(({ lessons: lesson }) => {
+    if (!lesson) return;
+    const prog = progMap[lesson.id];
+    const card = el('div', 'admin-card');
+    card.style.marginBottom = '1rem';
 
-  // Notes — student (editable by admin)
-  const notesDiv = el('div');
-  notesDiv.style.marginBottom = '1rem';
-  notesDiv.appendChild(Object.assign(el('p', null, 'Notatki ucznia (możesz edytować):'), { style: { cssText: 'font-weight:600;font-size:.86rem;color:var(--ink-60);margin-bottom:4px' } }));
-  const snTA = document.createElement('textarea');
-  snTA.className = 'notes-textarea';
-  snTA.value = prog.notes || '';
-  snTA.rows = 3;
-  notesDiv.appendChild(snTA);
-  const snSave = el('button', 'btn btn-primary btn-sm', 'Zapisz notatki ucznia');
-  snSave.style.marginTop = '8px';
-  snSave.addEventListener('click', async () => {
-    const { error } = await sb.from('lesson_progress').upsert(
-      { student_id: sid, lesson_id: lid, notes: snTA.value },
-      { onConflict: 'student_id,lesson_id' }
-    );
-    if (error) showToast('Błąd: ' + error.message, 'error');
-    else showToast('Notatki ucznia zapisane ✓', 'success');
-  });
-  notesDiv.appendChild(snSave);
+    // Lesson header
+    const hdr = el('div');
+    hdr.style.cssText = 'display:flex;align-items:center;gap:.6rem;margin-bottom:.75rem;padding-bottom:.75rem;border-bottom:1px solid var(--border)';
+    const emojiEl = el('span', null, lesson.header_emoji || '🦉');
+    emojiEl.style.fontSize = '1.4rem';
+    const info = el('div');
+    info.style.flex = '1';
+    const titleRow = el('div');
+    titleRow.style.cssText = 'display:flex;align-items:center;gap:.5rem;flex-wrap:wrap';
+    const titleEl = el('strong', null, lesson.title || '(bez tytułu)');
+    titleEl.style.fontSize = '1rem';
+    titleRow.appendChild(titleEl);
+    if (lesson.level) titleRow.appendChild(el('span', 'badge', lesson.level));
+    info.appendChild(titleRow);
+    if (lesson.subtitle) {
+      const sub = el('div', null, lesson.subtitle);
+      sub.style.cssText = 'font-size:.82rem;color:var(--ink-60);margin-top:2px';
+      info.appendChild(sub);
+    }
+    hdr.appendChild(emojiEl);
+    hdr.appendChild(info);
+    card.appendChild(hdr);
 
-  // Teacher notes
-  const tnLabel = el('p', null, 'Notatki nauczyciela (widoczne tylko dla Ciebie):');
-  tnLabel.style.cssText = 'font-weight:600;font-size:.86rem;color:var(--ink-60);margin-bottom:4px;margin-top:12px;';
-  const tnTA = document.createElement('textarea');
-  tnTA.className = 'notes-textarea';
-  tnTA.value = prog.teacher_notes || '';
-  tnTA.rows  = 3;
-  notesDiv.appendChild(tnLabel);
-  notesDiv.appendChild(tnTA);
-  const tnSave = el('button', 'btn btn-primary btn-sm', 'Zapisz notatki nauczyciela');
-  tnSave.style.marginTop = '8px';
-  tnSave.addEventListener('click', async () => {
-    const { error } = await sb.from('lesson_progress').upsert(
-      { student_id: sid, lesson_id: lid, teacher_notes: tnTA.value },
-      { onConflict: 'student_id,lesson_id' }
-    );
-    if (error) showToast('Błąd: ' + error.message, 'error');
-    else showToast('Notatki nauczyciela zapisane ✓', 'success');
-  });
-  notesDiv.appendChild(tnSave);
-  card.appendChild(notesDiv);
+    if (!prog) {
+      const noData = el('p', null, 'Lekcja nie była jeszcze otwarta przez ucznia.');
+      noData.style.cssText = 'color:var(--ink-60);font-size:.86rem;margin:0';
+      card.appendChild(noData);
+      display.appendChild(card);
+      return;
+    }
 
-  display.appendChild(card);
-});
+    // Stats row
+    const srs = prog.srs_data || {};
+    const due = Object.values(srs).filter(c => !c.nextReview || c.nextReview <= today).length;
+    const total = Object.keys(srs).length;
+    const stats = el('div');
+    stats.style.cssText = 'display:flex;gap:1.5rem;flex-wrap:wrap;margin-bottom:1rem;font-size:.84rem';
+    [
+      ['🃏', `Fiszki SRS: <b>${total}</b> łącznie, <b>${due}</b> do powtórki`],
+      ['✅', `Bloki z postępem: <b>${Object.keys(prog.block_progress || {}).length}</b>`],
+      ['⭐', `Moje słówka: <b>${(prog.mywords || []).length}</b>`],
+      ['🕐', `Aktualizacja: <b>${prog.updated_at ? new Date(prog.updated_at).toLocaleString('pl-PL') : '—'}</b>`]
+    ].forEach(([icon, html]) => {
+      const s = el('div');
+      s.style.cssText = 'color:var(--ink-60)';
+      s.innerHTML = icon + ' ' + html;
+      stats.appendChild(s);
+    });
+    card.appendChild(stats);
+
+    // Notes helper
+    function makeNotesRow(labelText, initVal, onSave) {
+      const wrap = el('div');
+      wrap.style.cssText = 'margin-bottom:.6rem';
+      const lbl = el('p', null, labelText);
+      lbl.style.cssText = 'font-weight:600;font-size:.8rem;color:var(--ink-60);margin-bottom:3px';
+      const ta = document.createElement('textarea');
+      ta.className = 'notes-textarea';
+      ta.value = initVal || '';
+      ta.rows = 2;
+      ta.style.cssText = 'width:100%;box-sizing:border-box;font-size:.82rem';
+      const btn = el('button', 'btn btn-primary btn-sm', 'Zapisz');
+      btn.style.marginTop = '5px';
+      btn.addEventListener('click', () => onSave(ta.value));
+      wrap.appendChild(lbl); wrap.appendChild(ta); wrap.appendChild(btn);
+      return wrap;
+    }
+
+    card.appendChild(makeNotesRow('Notatki ucznia:', prog.notes, async val => {
+      const { error } = await sb.from('lesson_progress')
+        .upsert({ student_id: sid, lesson_id: lesson.id, notes: val }, { onConflict: 'student_id,lesson_id' });
+      if (error) showToast('Błąd: ' + error.message, 'error');
+      else showToast('Notatki ucznia zapisane ✓', 'success');
+    }));
+
+    card.appendChild(makeNotesRow('Notatki nauczyciela (tylko dla Ciebie):', prog.teacher_notes, async val => {
+      const { error } = await sb.from('lesson_progress')
+        .upsert({ student_id: sid, lesson_id: lesson.id, teacher_notes: val }, { onConflict: 'student_id,lesson_id' });
+      if (error) showToast('Błąd: ' + error.message, 'error');
+      else showToast('Notatki nauczyciela zapisane ✓', 'success');
+    }));
+
+    display.appendChild(card);
+  });
+}
 
 // ── SETTINGS ──────────────────────────────────────────────────────
 async function loadSettings() {
