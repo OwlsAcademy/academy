@@ -68,7 +68,8 @@ CREATE TABLE IF NOT EXISTS config (
 );
 
 -- Add columns introduced after initial release (safe to re-run)
-ALTER TABLE config ADD COLUMN IF NOT EXISTS ai_prompt TEXT NOT NULL DEFAULT '';
+ALTER TABLE config ADD COLUMN IF NOT EXISTS ai_prompt     TEXT NOT NULL DEFAULT '';
+ALTER TABLE config ADD COLUMN IF NOT EXISTS gemini_api_key TEXT NOT NULL DEFAULT '';
 
 INSERT INTO config (id) VALUES (1) ON CONFLICT (id) DO NOTHING;
 
