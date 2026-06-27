@@ -1068,7 +1068,6 @@ async function loadAllStudentProgress(sid) {
     [
       ['🃏', `Fiszki SRS: <b>${total}</b> łącznie, <b>${due}</b> do powtórki`],
       ['✅', `Bloki z postępem: <b>${Object.keys(prog.block_progress || {}).length}</b>`],
-      ['⭐', `Moje słówka: <b>${(prog.mywords || []).length}</b>`],
       ['🕐', `Aktualizacja: <b>${prog.updated_at ? new Date(prog.updated_at).toLocaleString('pl-PL') : '—'}</b>`]
     ].forEach(([icon, html]) => {
       const s = el('div');
@@ -1077,6 +1076,73 @@ async function loadAllStudentProgress(sid) {
       stats.appendChild(s);
     });
     card.appendChild(stats);
+
+    // Mywords editor
+    const mwWrap = el('div');
+    mwWrap.style.cssText = 'margin-bottom:1rem;padding:.7rem;background:var(--cream);border-radius:var(--radius-sm);border:1px solid var(--border)';
+    const mwLabel = el('p', null, '⭐ Moje słówka ucznia:');
+    mwLabel.style.cssText = 'font-weight:600;font-size:.8rem;color:var(--ink-60);margin-bottom:.45rem';
+    mwWrap.appendChild(mwLabel);
+
+    let mwWords = JSON.parse(JSON.stringify(prog.mywords || []));
+    const mwChips = el('div');
+    mwChips.style.cssText = 'display:flex;flex-wrap:wrap;gap:5px;margin-bottom:.5rem;min-height:22px';
+
+    function renderMwChips() {
+      mwChips.textContent = '';
+      if (!mwWords.length) {
+        const empty = el('span', null, 'Brak słówek');
+        empty.style.cssText = 'color:var(--ink-60);font-size:.82rem';
+        mwChips.appendChild(empty);
+        return;
+      }
+      mwWords.forEach((w, i) => {
+        const chip = el('div');
+        chip.style.cssText = 'display:flex;align-items:center;gap:3px;background:white;border:1px solid var(--border);border-radius:20px;padding:2px 8px 2px 10px;font-size:.8rem';
+        chip.appendChild(el('span', null, (w.en || w.word || '') + (w.pl ? ' / ' + w.pl : '')));
+        const del = el('button', null, '×');
+        del.style.cssText = 'background:none;border:none;cursor:pointer;color:#aaa;font-size:.95rem;padding:0 2px;line-height:1';
+        del.addEventListener('click', () => { mwWords.splice(i, 1); renderMwChips(); });
+        chip.appendChild(del);
+        mwChips.appendChild(chip);
+      });
+    }
+    renderMwChips();
+    mwWrap.appendChild(mwChips);
+
+    const mwAddRow = el('div');
+    mwAddRow.style.cssText = 'display:flex;gap:5px;flex-wrap:wrap;align-items:center;margin-bottom:.5rem';
+    const mwEnInp = document.createElement('input');
+    mwEnInp.placeholder = 'Słówko';
+    mwEnInp.style.cssText = 'width:120px;padding:4px 7px;border:1px solid var(--border);border-radius:5px;font-size:.8rem';
+    const mwPlInp = document.createElement('input');
+    mwPlInp.placeholder = 'Tłumaczenie (opcj.)';
+    mwPlInp.style.cssText = 'width:150px;padding:4px 7px;border:1px solid var(--border);border-radius:5px;font-size:.8rem';
+    const mwAddBtn = el('button', 'btn btn-ghost btn-sm', '+ Dodaj');
+    mwAddBtn.style.fontSize = '.8rem';
+    const doAdd = () => {
+      const en = mwEnInp.value.trim();
+      if (!en) return;
+      if (!mwWords.some(w => (w.en || w.word) === en)) mwWords.push({ en, pl: mwPlInp.value.trim() });
+      mwEnInp.value = ''; mwPlInp.value = '';
+      renderMwChips();
+      mwEnInp.focus();
+    };
+    mwAddBtn.addEventListener('click', doAdd);
+    mwPlInp.addEventListener('keydown', e => { if (e.key === 'Enter') doAdd(); });
+    mwAddRow.appendChild(mwEnInp); mwAddRow.appendChild(mwPlInp); mwAddRow.appendChild(mwAddBtn);
+    mwWrap.appendChild(mwAddRow);
+
+    const mwSaveBtn = el('button', 'btn btn-primary btn-sm', 'Zapisz słówka');
+    mwSaveBtn.style.fontSize = '.8rem';
+    mwSaveBtn.addEventListener('click', async () => {
+      const { error } = await sb.from('lesson_progress')
+        .upsert({ student_id: sid, lesson_id: lesson.id, mywords: mwWords }, { onConflict: 'student_id,lesson_id' });
+      if (error) showToast('Błąd: ' + error.message, 'error');
+      else showToast('Słówka zapisane ✓', 'success');
+    });
+    mwWrap.appendChild(mwSaveBtn);
+    card.appendChild(mwWrap);
 
     // Notes helper
     function makeNotesRow(labelText, initVal, onSave) {
