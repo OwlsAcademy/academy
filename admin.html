@@ -1639,7 +1639,7 @@ document.getElementById('aiRefineBtn').addEventListener('click', async () => {
       const res = await fetch(
         `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`,
         { method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ contents, generationConfig: { maxOutputTokens: 8192 } }) }
+          body: JSON.stringify({ contents, generationConfig: { maxOutputTokens: 65536 } }) }
       );
       if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.error?.message || 'Błąd Gemini: ' + res.status); }
       const result = await res.json();
@@ -1660,8 +1660,12 @@ document.getElementById('aiRefineBtn').addEventListener('click', async () => {
     }
 
     const jsonMatch = text.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) throw new Error('Nie znaleziono JSON w odpowiedzi AI.');
-    loadJsonLesson(JSON.parse(jsonMatch[0]));
+    if (!jsonMatch) throw new Error('Nie znaleziono JSON w odpowiedzi AI. Spróbuj ponownie lub skróć lekcję.');
+    try {
+      loadJsonLesson(JSON.parse(jsonMatch[0]));
+    } catch(parseErr) {
+      throw new Error('Odpowiedź AI została ucięta (za długa). Spróbuj krótszego czasu lekcji lub mniej wymagań.');
+    }
 
     aiConversation.push({ role: 'assistant', text });
     aiRefineCount++;
@@ -1717,7 +1721,7 @@ document.getElementById('aiDirectBtn').addEventListener('click', async () => {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             contents: [{ role: 'user', parts: [{ text: prompt }] }],
-            generationConfig: { maxOutputTokens: 8192 }
+            generationConfig: { maxOutputTokens: 65536 }
           })
         }
       );
@@ -1753,10 +1757,12 @@ document.getElementById('aiDirectBtn').addEventListener('click', async () => {
     }
 
     const jsonMatch = text.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) throw new Error('Nie znaleziono JSON w odpowiedzi AI.');
-
-    const parsed = JSON.parse(jsonMatch[0]);
-    loadJsonLesson(parsed);
+    if (!jsonMatch) throw new Error('Nie znaleziono JSON w odpowiedzi AI. Spróbuj ponownie lub skróć lekcję.');
+    try {
+      loadJsonLesson(JSON.parse(jsonMatch[0]));
+    } catch(parseErr) {
+      throw new Error('Odpowiedź AI została ucięta (za długa). Spróbuj krótszego czasu lekcji lub mniej wymagań.');
+    }
     aiConversation = [{ role: 'user', text: prompt }, { role: 'assistant', text }];
     aiActiveModel  = model;
     aiRefineCount  = 1;
