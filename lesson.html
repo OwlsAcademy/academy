@@ -114,20 +114,26 @@ function renderLesson(lesson) {
   const ttsLang = detectLang(lesson);
 
   // Build nav tabs + panels
+  const navBar   = document.getElementById('navBar');
   const navTabs  = document.getElementById('navTabs');
   const panels   = document.getElementById('tabPanels');
   navTabs.textContent = '';
   panels.textContent  = '';
 
-  // Add "My Words" tab to nav
-  const mwBtn = el('button', 'nav-tab', '⭐ Moje słówka');
-  mwBtn.addEventListener('click', toggleMyWords);
-  navTabs.appendChild(mwBtn);
+  // Remove previously injected utility buttons (safe on re-render)
+  navBar.querySelectorAll('.nav-util').forEach(e => e.remove());
 
-  // Add "Notatki" tab
-  const notesBtn = el('button', 'nav-tab', '📝 Notatki');
+  // "Moje słówka" and "Notatki" live outside the scrollable nav-tabs
+  // so they're always visible regardless of how many lesson tabs there are
+  const saveInd  = document.getElementById('saveInd');
+  const mwBtn    = el('button', 'nav-tab nav-util', '⭐ Moje słówka');
+  const notesBtn = el('button', 'nav-tab nav-util', '📝 Notatki');
+  const utilDiv  = el('div', 'nav-divider nav-util');
+  mwBtn.addEventListener('click', toggleMyWords);
   notesBtn.addEventListener('click', () => switchToNotes());
-  navTabs.appendChild(notesBtn);
+  navBar.insertBefore(notesBtn, saveInd);
+  navBar.insertBefore(mwBtn, notesBtn);
+  navBar.insertBefore(utilDiv, mwBtn);
 
   if (!tabs.length) {
     const empty = el('div', 'tab-panel active');
@@ -151,7 +157,7 @@ function renderLesson(lesson) {
       const panel = document.getElementById('panel-' + tab.id);
       if (panel) { panel.classList.add('active'); activeTabId = tab.id; }
     });
-    navTabs.insertBefore(btn, mwBtn);
+    navTabs.appendChild(btn);
 
     // Panel
     const panel = el('div', 'tab-panel' + (ti === 0 ? ' active' : ''));

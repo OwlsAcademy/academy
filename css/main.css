@@ -376,10 +376,12 @@ input:focus, textarea:focus, select:focus {
   font-family: var(--font-sans);
   font-weight: 500;
   white-space: nowrap;
+  cursor: pointer;
   transition: all .2s;
 }
 .nav-tab:hover { background: rgba(255,255,255,.08); color: rgba(255,255,255,.85); }
 .nav-tab.active { background: var(--amber); color: var(--ink); font-weight: 700; }
+.nav-util { flex-shrink: 0; }
 
 .save-indicator {
   color: rgba(255,255,255,.4);
