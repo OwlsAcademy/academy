@@ -1281,8 +1281,8 @@ input:focus, textarea:focus, select:focus {
   position: fixed;
   top: 0;
   right: -460px;
-  width: 440px;
-  height: 100vh;
+  width: min(440px, 100vw);
+  height: 100dvh;
   background: white;
   box-shadow: -4px 0 32px rgba(0,0,0,.18);
   z-index: 300;
@@ -1319,6 +1319,7 @@ input:focus, textarea:focus, select:focus {
   padding: 1.25rem;
   overflow-y: auto;
   flex: 1;
+  min-height: 0;
 }
 
 /* Import JSON */
