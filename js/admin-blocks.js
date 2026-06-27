@@ -1052,6 +1052,7 @@ window.OWL = window.OWL || {};
       wrap.appendChild(field('Timer (sekundy)', numberInput(data.timer, '60', v => onChange({ ...data, timer: v }))));
       wrap.appendChild(el('div', { class: 'ab-section-label' }, 'Pytania'));
       wrap.appendChild(stringList(data.questions, 'Pytanie...', v => onChange({ ...data, questions: v }), 'Dodaj pytanie'));
+      wrap.appendChild(field('Przydatne zwroty', textArea(data.usefulLanguage || '', 'np. I think... / In my opinion...', v => onChange({ ...data, usefulLanguage: v }))));
       return wrap;
     },
 
@@ -1071,6 +1072,7 @@ window.OWL = window.OWL || {};
         v => onChange({ ...data, cards: v }),
         'Dodaj kartę'
       ));
+      wrap.appendChild(field('Przydatne zwroty', textArea(data.usefulLanguage || '', 'np. I agree that... / I strongly believe...', v => onChange({ ...data, usefulLanguage: v }))));
       return wrap;
     },
 
@@ -1091,6 +1093,7 @@ window.OWL = window.OWL || {};
         v => onChange({ ...data, questions: v }),
         'Dodaj pytanie'
       ));
+      wrap.appendChild(field('Przydatne zwroty', textArea(data.usefulLanguage || '', 'np. I would rather... because... / I prefer...', v => onChange({ ...data, usefulLanguage: v }))));
       return wrap;
     },
 
@@ -1100,15 +1103,17 @@ window.OWL = window.OWL || {};
       wrap.appendChild(field('Instrukcja', textArea(data.instruction, 'Instrukcja do rankingu...', v => onChange({ ...data, instruction: v }))));
       wrap.appendChild(el('div', { class: 'ab-section-label' }, 'Elementy do uszeregowania'));
       wrap.appendChild(stringList(data.items, 'Element...', v => onChange({ ...data, items: v }), 'Dodaj element'));
+      wrap.appendChild(field('Przydatne zwroty', textArea(data.usefulLanguage || '', 'np. I think the most important is... / I ranked ... first because...', v => onChange({ ...data, usefulLanguage: v }))));
       return wrap;
     },
 
     debate(data, onChange) {
       const wrap = el('div', { class: 'ab-editor-body' });
       wrap.appendChild(field('Tytuł', textInput(data.title, 'Tytuł', v => onChange({ ...data, title: v }))));
-      wrap.appendChild(field('Timer (sekundy)', numberInput(data.timer, '120', v => onChange({ ...data, timer: v }))));
+      wrap.appendChild(field('Timer (sekundy)', numberInput(data.timer || 120, '120', v => onChange({ ...data, timer: v }))));
       wrap.appendChild(el('div', { class: 'ab-section-label' }, 'Tezy debaty'));
       wrap.appendChild(stringList(data.motions, 'Teza...', v => onChange({ ...data, motions: v }), 'Dodaj tezę'));
+      wrap.appendChild(field('Przydatne zwroty', textArea(data.usefulLanguage || '', 'np. I support the idea that... / My main argument is...', v => onChange({ ...data, usefulLanguage: v }))));
       return wrap;
     },
 
