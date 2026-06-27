@@ -243,29 +243,48 @@
       <div class="admin-section-hdr"><h2>⚙️ Ustawienia</h2></div>
 
       <div class="admin-card">
-        <h3 style="display:flex;align-items:center;gap:.5rem">
-          🦉 Integracja AI (Claude API)
-          <span class="info-popover-wrap">
-            <button class="info-btn" id="aiKeyInfoBtn" aria-label="Jak uzyskać klucz API?">i</button>
-            <div class="info-popover" id="aiKeyInfoPopover">
-              <strong>Jak uzyskać klucz Anthropic API?</strong>
-              <ol>
-                <li>Wejdź na <a href="https://console.anthropic.com" target="_blank" rel="noopener">console.anthropic.com</a></li>
-                <li>Zaloguj się lub utwórz konto</li>
-                <li>Przejdź do <strong>Settings → API Keys</strong></li>
-                <li>Kliknij <strong>Create Key</strong>, nadaj nazwę</li>
-                <li>Skopiuj klucz (zaczyna się od <code>sk-ant-</code>) i wklej go powyżej</li>
-              </ol>
-              <p style="margin-top:.6rem;color:var(--ink-60);font-size:.8rem">Klucz jest widoczny tylko raz — zapisz go od razu. Koszty są naliczane per token.</p>
-            </div>
-          </span>
-        </h3>
+        <h3>🦉 Integracja AI</h3>
         <div class="config-info">Klucze API są przechowywane w bazie danych (tabela config), nie w kodzie źródłowym.</div>
         <div class="two-field">
-          <div class="field"><label>Anthropic (Claude) API Key</label>
-            <input type="password" id="cfgAnthropicKey" placeholder="sk-ant-..."></div>
-          <div class="field"><label>Google Gemini API Key</label>
-            <input type="password" id="cfgGeminiKey" placeholder="AIza..."></div>
+          <div class="field">
+            <label style="display:flex;align-items:center;gap:.4rem">
+              Anthropic (Claude) API Key
+              <span class="info-popover-wrap">
+                <button class="info-btn" id="aiKeyInfoBtn" aria-label="Jak uzyskać klucz Anthropic API?">i</button>
+                <div class="info-popover" id="aiKeyInfoPopover">
+                  <strong>Jak uzyskać klucz Anthropic API?</strong>
+                  <ol>
+                    <li>Wejdź na <a href="https://console.anthropic.com" target="_blank" rel="noopener">console.anthropic.com</a></li>
+                    <li>Zaloguj się lub utwórz konto</li>
+                    <li>Przejdź do <strong>Settings → API Keys</strong></li>
+                    <li>Kliknij <strong>Create Key</strong>, nadaj nazwę</li>
+                    <li>Skopiuj klucz (zaczyna się od <code>sk-ant-</code>) i wklej go poniżej</li>
+                  </ol>
+                  <p style="margin-top:.6rem;color:var(--ink-60);font-size:.8rem">Klucz jest widoczny tylko raz — zapisz go od razu. Koszty są naliczane per token.</p>
+                </div>
+              </span>
+            </label>
+            <input type="password" id="cfgAnthropicKey" placeholder="sk-ant-...">
+          </div>
+          <div class="field">
+            <label style="display:flex;align-items:center;gap:.4rem">
+              Google Gemini API Key
+              <span class="info-popover-wrap">
+                <button class="info-btn" id="geminiKeyInfoBtn" aria-label="Jak uzyskać klucz Gemini API?">i</button>
+                <div class="info-popover" id="geminiKeyInfoPopover">
+                  <strong>Jak uzyskać klucz Google Gemini API?</strong>
+                  <ol>
+                    <li>Wejdź na <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a></li>
+                    <li>Zaloguj się kontem Google</li>
+                    <li>Kliknij <strong>Create API Key</strong></li>
+                    <li>Skopiuj klucz (zaczyna się od <code>AIza</code>) i wklej go poniżej</li>
+                  </ol>
+                  <p style="margin-top:.6rem;color:var(--ink-60);font-size:.8rem">Klucz daje dostęp do modelu Gemini 2.5 Flash. Dostępny bezpłatny limit.</p>
+                </div>
+              </span>
+            </label>
+            <input type="password" id="cfgGeminiKey" placeholder="AIza...">
+          </div>
         </div>
         <button class="btn btn-primary btn-sm" id="saveCfgAi">Zapisz</button>
       </div>
@@ -1241,13 +1260,17 @@ async function loadSettings() {
   document.getElementById('cfgAiPrompt').value = aiPromptTemplate || getDefaultPromptTemplate();
 }
 
-// ── AI KEY INFO POPOVER ───────────────────────────────────────────
-document.getElementById('aiKeyInfoBtn').addEventListener('click', e => {
-  e.stopPropagation();
-  document.getElementById('aiKeyInfoPopover').classList.toggle('open');
+// ── AI KEY INFO POPOVERS ──────────────────────────────────────────
+['aiKeyInfoBtn', 'geminiKeyInfoBtn'].forEach(btnId => {
+  document.getElementById(btnId).addEventListener('click', e => {
+    e.stopPropagation();
+    const popId = btnId.replace('Btn', 'Popover');
+    document.getElementById(popId).classList.toggle('open');
+  });
 });
 document.addEventListener('click', () => {
   document.getElementById('aiKeyInfoPopover').classList.remove('open');
+  document.getElementById('geminiKeyInfoPopover').classList.remove('open');
 });
 
 document.getElementById('saveCfgAi').addEventListener('click', async () => {
