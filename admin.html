@@ -164,9 +164,37 @@
         <button class="btn btn-primary btn-sm" id="newLessonFromListBtn">+ Nowa lekcja</button>
       </div>
       <div class="admin-card">
-        <div style="margin-bottom:1rem">
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:1rem;align-items:center">
           <input type="text" id="lessonSearch" placeholder="🔍 Szukaj po tytule..."
-                 style="padding:9px 12px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:.9rem;width:100%">
+                 style="padding:9px 12px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:.9rem;flex:1;min-width:160px">
+          <select id="lessonLevelFilter" style="padding:9px 10px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:.9rem">
+            <option value="">Wszystkie poziomy</option>
+            <option>A1</option><option>A2</option><option>B1</option>
+            <option>B2</option><option>C1</option><option>C2</option>
+          </select>
+          <select id="lessonLangFilter" style="padding:9px 10px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:.9rem">
+            <option value="">Wszystkie języki</option>
+            <option value="en">🇬🇧 Angielski</option>
+            <option value="pl">🇵🇱 Polski</option>
+            <option value="de">🇩🇪 Niemiecki</option>
+            <option value="fr">🇫🇷 Francuski</option>
+            <option value="es">🇪🇸 Hiszpański</option>
+            <option value="it">🇮🇹 Włoski</option>
+            <option value="cs">🇨🇿 Czeski</option>
+            <option value="sk">🇸🇰 Słowacki</option>
+            <option value="ru">🇷🇺 Rosyjski</option>
+            <option value="uk">🇺🇦 Ukraiński</option>
+            <option value="nl">🇳🇱 Niderlandzki</option>
+            <option value="sv">🇸🇪 Szwedzki</option>
+            <option value="nb">🇳🇴 Norweski</option>
+            <option value="da">🇩🇰 Duński</option>
+            <option value="fi">🇫🇮 Fiński</option>
+            <option value="pt">🇵🇹 Portugalski</option>
+            <option value="tr">🇹🇷 Turecki</option>
+            <option value="ar">🇸🇦 Arabski</option>
+            <option value="zh">🇨🇳 Chiński</option>
+            <option value="ja">🇯🇵 Japoński</option>
+          </select>
         </div>
         <div id="lessonIndexList"></div>
       </div>
@@ -730,6 +758,49 @@ async function saveLesson() {
 }
 
 // ── LESSON INDEX ─────────────────────────────────────────────────
+let lessonIndexData = [];
+
+function applyLessonFilters() {
+  const list  = document.getElementById('lessonIndexList');
+  const q     = document.getElementById('lessonSearch').value.toLowerCase();
+  const level = document.getElementById('lessonLevelFilter').value;
+  const lang  = document.getElementById('lessonLangFilter').value;
+
+  const items = lessonIndexData.filter(l =>
+    (!q     || (l.title || '').toLowerCase().includes(q)) &&
+    (!level || l.level === level) &&
+    (!lang  || l.target_lang === lang)
+  );
+
+  list.textContent = '';
+  if (!items.length) {
+    list.appendChild(el('p', null, 'Brak lekcji spełniających kryteria.'));
+    return;
+  }
+  items.forEach(lesson => {
+    const row = el('div', 'lesson-index-item');
+    row.appendChild(el('div', 'lii-emoji', lesson.header_emoji || '🦉'));
+    const info = el('div', 'lii-info');
+    info.appendChild(el('div', 'lii-title', lesson.title || '(bez tytułu)'));
+    const meta = [lesson.level, langName(lesson.target_lang || ''), lesson.subtitle].filter(Boolean).join(' · ');
+    info.appendChild(el('div', 'lii-meta', meta));
+    row.appendChild(info);
+    const actions = el('div', 'lii-actions');
+    const editBtn = el('button', 'btn btn-ghost btn-xs', '✏️ Edytuj');
+    editBtn.addEventListener('click', () => loadLessonIntoBuilder(lesson.id));
+    const delBtn = el('button', 'btn btn-danger btn-xs', '🗑️');
+    delBtn.addEventListener('click', () => deleteLesson(lesson.id, lesson.title));
+    actions.appendChild(editBtn);
+    actions.appendChild(delBtn);
+    row.appendChild(actions);
+    list.appendChild(row);
+  });
+}
+
+['lessonSearch', 'lessonLevelFilter', 'lessonLangFilter'].forEach(id => {
+  document.getElementById(id).addEventListener(id === 'lessonSearch' ? 'input' : 'change', applyLessonFilters);
+});
+
 async function renderLessonIndex() {
   const list = document.getElementById('lessonIndexList');
   list.textContent = '';
@@ -737,41 +808,12 @@ async function renderLessonIndex() {
 
   const { data: lessons, error } = await sb
     .from('lessons')
-    .select('id, title, subtitle, level, header_emoji, created_at')
+    .select('id, title, subtitle, level, header_emoji, target_lang, created_at')
     .order('created_at', { ascending: false });
 
-  list.textContent = '';
-  if (error) { list.appendChild(el('p', null, 'Błąd: ' + error.message)); return; }
-  if (!lessons || !lessons.length) { list.appendChild(el('p', null, 'Brak lekcji.')); return; }
-
-  const query = () => document.getElementById('lessonSearch').value.toLowerCase();
-
-  function drawList(items) {
-    list.textContent = '';
-    items.forEach(lesson => {
-      const row = el('div', 'lesson-index-item');
-      row.appendChild(el('div', 'lii-emoji', lesson.header_emoji || '🦉'));
-      const info = el('div', 'lii-info');
-      info.appendChild(el('div', 'lii-title', lesson.title || '(bez tytułu)'));
-      info.appendChild(el('div', 'lii-meta', [lesson.level, lesson.subtitle].filter(Boolean).join(' · ')));
-      row.appendChild(info);
-      const actions = el('div', 'lii-actions');
-      const editBtn = el('button', 'btn btn-ghost btn-xs', '✏️ Edytuj');
-      editBtn.addEventListener('click', () => loadLessonIntoBuilder(lesson.id));
-      const delBtn = el('button', 'btn btn-danger btn-xs', '🗑️');
-      delBtn.addEventListener('click', () => deleteLesson(lesson.id, lesson.title));
-      actions.appendChild(editBtn);
-      actions.appendChild(delBtn);
-      row.appendChild(actions);
-      list.appendChild(row);
-    });
-  }
-
-  drawList(lessons);
-  document.getElementById('lessonSearch').addEventListener('input', () => {
-    const q = query();
-    drawList(q ? lessons.filter(l => (l.title || '').toLowerCase().includes(q)) : lessons);
-  });
+  if (error) { list.textContent = ''; list.appendChild(el('p', null, 'Błąd: ' + error.message)); return; }
+  lessonIndexData = lessons || [];
+  applyLessonFilters();
 }
 
 async function loadLessonIntoBuilder(id) {
