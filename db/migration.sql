@@ -64,9 +64,11 @@ CREATE TABLE IF NOT EXISTS config (
   emailjs_service_id  TEXT NOT NULL DEFAULT '',
   emailjs_template_id TEXT NOT NULL DEFAULT '',
   emailjs_to_email    TEXT NOT NULL DEFAULT '',
-  anthropic_api_key   TEXT NOT NULL DEFAULT '',
-  ai_prompt           TEXT NOT NULL DEFAULT ''
+  anthropic_api_key   TEXT NOT NULL DEFAULT ''
 );
+
+-- Add columns introduced after initial release (safe to re-run)
+ALTER TABLE config ADD COLUMN IF NOT EXISTS ai_prompt TEXT NOT NULL DEFAULT '';
 
 INSERT INTO config (id) VALUES (1) ON CONFLICT (id) DO NOTHING;
 
