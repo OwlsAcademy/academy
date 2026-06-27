@@ -1107,7 +1107,8 @@ async function loadAllStudentProgress(sid) {
 
   assigned.forEach(({ lessons: lesson }) => {
     if (!lesson) return;
-    const prog = progMap[lesson.id];
+    const prog = progMap[lesson.id] || {};
+    const progExists = !!progMap[lesson.id];
     const card = el('div', 'admin-card');
     card.style.marginBottom = '1rem';
 
@@ -1134,12 +1135,10 @@ async function loadAllStudentProgress(sid) {
     hdr.appendChild(info);
     card.appendChild(hdr);
 
-    if (!prog) {
-      const noData = el('p', null, 'Lekcja nie była jeszcze otwarta przez ucznia.');
-      noData.style.cssText = 'color:var(--ink-60);font-size:.86rem;margin:0';
+    if (!progExists) {
+      const noData = el('p', null, 'Lekcja nie była jeszcze otwarta — możesz jednak dodać notatki z wyprzedzeniem.');
+      noData.style.cssText = 'color:var(--ink-60);font-size:.82rem;margin-bottom:.75rem';
       card.appendChild(noData);
-      display.appendChild(card);
-      return;
     }
 
     // Stats row
