@@ -1346,6 +1346,50 @@ input:focus, textarea:focus, select:focus {
 /* Config section */
 .config-info { background: var(--amber-bg); border: 1px solid var(--amber); border-radius: 8px; padding: 10px 14px; font-size: .86rem; margin-bottom: 1.2rem; }
 
+/* Info button + popover */
+.info-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 20px; height: 20px; border-radius: 50%;
+  background: var(--ink-30); color: white;
+  border: none; cursor: pointer; font-size: .72rem; font-weight: 700;
+  font-family: var(--font-sans); line-height: 1;
+  transition: background .15s;
+  flex-shrink: 0;
+}
+.info-btn:hover { background: var(--amber); }
+
+.info-popover-wrap { position: relative; display: inline-block; }
+
+.info-popover {
+  display: none;
+  position: absolute; left: 50%; top: calc(100% + 10px);
+  transform: translateX(-50%);
+  width: 300px;
+  background: white; border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--card-shadow-lg);
+  padding: 1rem 1.1rem;
+  font-size: .84rem; line-height: 1.55;
+  z-index: 900;
+}
+.info-popover::before {
+  content: '';
+  position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%);
+  border: 7px solid transparent;
+  border-bottom-color: var(--border);
+}
+.info-popover::after {
+  content: '';
+  position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%);
+  border: 6px solid transparent;
+  border-bottom-color: white;
+}
+.info-popover.open { display: block; }
+.info-popover ol { padding-left: 1.2rem; margin: .5rem 0 0; }
+.info-popover li { margin-bottom: .35rem; }
+.info-popover a { color: var(--amber); text-decoration: underline; word-break: break-all; }
+.info-popover strong { color: var(--ink); }
+
 /* ── RESPONSIVE ─────────────────────────────────────────────────── */
 @media (max-width: 768px) {
   .admin-layout { flex-direction: column; height: auto; overflow: visible; }

@@ -212,7 +212,23 @@
       <div class="admin-section-hdr"><h2>⚙️ Ustawienia</h2></div>
 
       <div class="admin-card">
-        <h3>🦉 Integracja AI (Claude API)</h3>
+        <h3 style="display:flex;align-items:center;gap:.5rem">
+          🦉 Integracja AI (Claude API)
+          <span class="info-popover-wrap">
+            <button class="info-btn" id="aiKeyInfoBtn" aria-label="Jak uzyskać klucz API?">i</button>
+            <div class="info-popover" id="aiKeyInfoPopover">
+              <strong>Jak uzyskać klucz Anthropic API?</strong>
+              <ol>
+                <li>Wejdź na <a href="https://console.anthropic.com" target="_blank" rel="noopener">console.anthropic.com</a></li>
+                <li>Zaloguj się lub utwórz konto</li>
+                <li>Przejdź do <strong>Settings → API Keys</strong></li>
+                <li>Kliknij <strong>Create Key</strong>, nadaj nazwę</li>
+                <li>Skopiuj klucz (zaczyna się od <code>sk-ant-</code>) i wklej go powyżej</li>
+              </ol>
+              <p style="margin-top:.6rem;color:var(--ink-60);font-size:.8rem">Klucz jest widoczny tylko raz — zapisz go od razu. Koszty są naliczane per token.</p>
+            </div>
+          </span>
+        </h3>
         <div class="config-info">Klucz API jest przechowywany w bazie danych (tabela config), nie w kodzie źródłowym.</div>
         <div class="field"><label>Anthropic API Key</label>
           <input type="password" id="cfgAnthropicKey" placeholder="sk-ant-..."></div>
@@ -1135,6 +1151,15 @@ async function loadSettings() {
   aiPromptTemplate = data.ai_prompt || null;
   document.getElementById('cfgAiPrompt').value = aiPromptTemplate || getDefaultPromptTemplate();
 }
+
+// ── AI KEY INFO POPOVER ───────────────────────────────────────────
+document.getElementById('aiKeyInfoBtn').addEventListener('click', e => {
+  e.stopPropagation();
+  document.getElementById('aiKeyInfoPopover').classList.toggle('open');
+});
+document.addEventListener('click', () => {
+  document.getElementById('aiKeyInfoPopover').classList.remove('open');
+});
 
 document.getElementById('saveCfgAi').addEventListener('click', async () => {
   const key = document.getElementById('cfgAnthropicKey').value.trim();
