@@ -350,10 +350,13 @@
   <div id="previewContent"></div>
 </div>
 
-<!-- AI Generator modal -->
-<div class="modal-overlay" id="aiModal">
-  <div class="modal-box">
-    <h3>🦉 Generator lekcji AI</h3>
+<!-- AI Generator side panel -->
+<div class="ai-panel" id="aiModal">
+  <div class="ai-panel-hdr">
+    <span>🦉 Generator lekcji AI</span>
+    <button class="ai-panel-close" id="aiModalCloseBtn" title="Zamknij panel">✕</button>
+  </div>
+  <div class="ai-panel-body">
     <div class="two-field">
       <div class="field"><label>Nauczany język</label>
         <select id="aiTargetLang">
@@ -413,7 +416,6 @@
     <div class="modal-actions" id="aiActionsSetup">
       <button class="btn btn-primary" id="aiDirectBtn">⚡ Generuj bezpośrednio</button>
       <button class="btn btn-ghost" id="aiCopyPromptBtn">📋 Kopiuj prompt</button>
-      <button class="btn btn-ghost" id="aiModalCloseBtn">Anuluj</button>
     </div>
     <div class="modal-actions" id="aiActionsRefine" style="display:none">
       <button class="btn btn-ghost" id="aiRestartBtn">↺ Generuj od nowa</button>
@@ -422,7 +424,7 @@
     <div id="aiStatus" style="margin-top:1rem;font-size:.86rem;color:var(--ink-60);display:none"></div>
     <div id="aiRefineSection" style="display:none;margin-top:1rem;border-top:1px solid var(--border);padding-top:1rem">
       <div id="aiRefineInfo" style="font-size:.82rem;font-weight:600;color:var(--ink);margin-bottom:.6rem"></div>
-      <div id="aiRefineHistory" style="margin-bottom:.6rem;max-height:110px;overflow-y:auto"></div>
+      <div id="aiRefineHistory" style="margin-bottom:.6rem;max-height:140px;overflow-y:auto"></div>
       <div style="display:flex;gap:6px;align-items:flex-end">
         <textarea id="aiRefineInput" rows="2"
           placeholder="np. Dodaj więcej fiszek, zmień artykuł na dłuższy, przenieś gramatykę na poziom B2..."

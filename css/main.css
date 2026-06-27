@@ -1248,7 +1248,7 @@ input:focus, textarea:focus, select:focus {
 }
 .preview-close:hover { background: var(--amber); color: var(--ink); }
 
-/* AI Generator modal */
+/* Modals (import, student) */
 .modal-overlay {
   position: fixed;
   inset: 0;
@@ -1273,6 +1273,51 @@ input:focus, textarea:focus, select:focus {
 }
 .modal-box h3 { font-size: 1.3rem; margin-bottom: 1.5rem; }
 .modal-actions { display: flex; gap: 10px; margin-top: 1.5rem; flex-wrap: wrap; }
+
+/* AI Generator side panel */
+.ai-panel {
+  position: fixed;
+  top: 0;
+  right: -460px;
+  width: 440px;
+  height: 100vh;
+  background: white;
+  box-shadow: -4px 0 32px rgba(0,0,0,.18);
+  z-index: 300;
+  display: flex;
+  flex-direction: column;
+  transition: right .25s cubic-bezier(.4,0,.2,1);
+  overflow: hidden;
+}
+.ai-panel.open { right: 0; }
+.ai-panel-hdr {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: .85rem 1.25rem;
+  border-bottom: 1px solid var(--border);
+  background: var(--cream);
+  flex-shrink: 0;
+  font-size: 1rem;
+  font-weight: 700;
+}
+.ai-panel-close {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1.1rem;
+  color: var(--ink-60);
+  padding: 3px 7px;
+  border-radius: var(--radius-sm);
+  line-height: 1;
+  transition: background .15s;
+}
+.ai-panel-close:hover { background: var(--border); color: var(--ink); }
+.ai-panel-body {
+  padding: 1.25rem;
+  overflow-y: auto;
+  flex: 1;
+}
 
 /* Import JSON */
 .json-drop-zone {
