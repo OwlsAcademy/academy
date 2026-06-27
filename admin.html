@@ -1644,6 +1644,8 @@ document.getElementById('aiRefineBtn').addEventListener('click', async () => {
       );
       if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.error?.message || 'Błąd Gemini: ' + res.status); }
       const result = await res.json();
+      if (result.candidates?.[0]?.finishReason === 'MAX_TOKENS')
+        throw new Error('Odpowiedź Gemini została ucięta (limit tokenów). Skróć czas lekcji lub zmniejsz wymagania.');
       text = result.candidates?.[0]?.content?.parts?.[0]?.text || '';
     } else {
       const key = cfg?.anthropic_api_key;
@@ -1653,19 +1655,21 @@ document.getElementById('aiRefineBtn').addEventListener('click', async () => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-api-key': key,
                    'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
-        body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 8192, messages })
+        body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 16000, messages })
       });
       if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.error?.message || 'Błąd Anthropic: ' + res.status); }
       const result = await res.json();
+      if (result.stop_reason === 'max_tokens')
+        throw new Error('Odpowiedź Claude została ucięta (limit tokenów). Skróć czas lekcji lub zmniejsz wymagania.');
       text = result.content?.[0]?.text || '';
     }
 
     const jsonMatch = text.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) throw new Error('Nie znaleziono JSON w odpowiedzi AI. Spróbuj ponownie lub skróć lekcję.');
+    if (!jsonMatch) throw new Error('Nie znaleziono JSON w odpowiedzi AI. Spróbuj ponownie.');
     try {
       loadJsonLesson(JSON.parse(jsonMatch[0]));
     } catch(parseErr) {
-      throw new Error('Odpowiedź AI została ucięta (za długa). Spróbuj krótszego czasu lekcji lub mniej wymagań.');
+      throw new Error('Błąd parsowania JSON z odpowiedzi AI. Spróbuj ponownie.');
     }
 
     aiConversation.push({ role: 'assistant', text });
@@ -1731,6 +1735,8 @@ document.getElementById('aiDirectBtn').addEventListener('click', async () => {
         throw new Error(err.error?.message || 'Błąd Gemini API: ' + response.status);
       }
       const result = await response.json();
+      if (result.candidates?.[0]?.finishReason === 'MAX_TOKENS')
+        throw new Error('Odpowiedź Gemini została ucięta (limit tokenów). Skróć czas lekcji lub zmniejsz wymagania.');
       text = result.candidates?.[0]?.content?.parts?.[0]?.text || '';
     } else {
       const key = cfg?.anthropic_api_key;
@@ -1745,7 +1751,7 @@ document.getElementById('aiDirectBtn').addEventListener('click', async () => {
         },
         body: JSON.stringify({
           model: 'claude-sonnet-4-6',
-          max_tokens: 8192,
+          max_tokens: 16000,
           messages: [{ role: 'user', content: prompt }]
         })
       });
@@ -1754,15 +1760,17 @@ document.getElementById('aiDirectBtn').addEventListener('click', async () => {
         throw new Error(err.error?.message || 'Błąd Anthropic API: ' + response.status);
       }
       const result = await response.json();
+      if (result.stop_reason === 'max_tokens')
+        throw new Error('Odpowiedź Claude została ucięta (limit tokenów). Skróć czas lekcji lub zmniejsz wymagania.');
       text = result.content?.[0]?.text || '';
     }
 
     const jsonMatch = text.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) throw new Error('Nie znaleziono JSON w odpowiedzi AI. Spróbuj ponownie lub skróć lekcję.');
+    if (!jsonMatch) throw new Error('Nie znaleziono JSON w odpowiedzi AI. Spróbuj ponownie.');
     try {
       loadJsonLesson(JSON.parse(jsonMatch[0]));
     } catch(parseErr) {
-      throw new Error('Odpowiedź AI została ucięta (za długa). Spróbuj krótszego czasu lekcji lub mniej wymagań.');
+      throw new Error('Błąd parsowania JSON z odpowiedzi AI. Spróbuj ponownie.');
     }
     aiConversation = [{ role: 'user', text: prompt }, { role: 'assistant', text }];
     aiActiveModel  = model;
