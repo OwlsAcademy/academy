@@ -1584,6 +1584,7 @@ OWL.Blocks = (function () {
 
     let currentIdx = 0;
     let flipped = false;
+    let reversed = false;   // false = word→def, true = def→word
 
     const total = orderedItems.length;
     const counterEl = el('div', 'fc-counter', '');
@@ -1591,6 +1592,15 @@ OWL.Blocks = (function () {
     const progressFill = el('div', 'fc-progress-fill');
     progressFill.style.width = '0%';
     progressBar.appendChild(progressFill);
+
+    // Direction toggle
+    const dirBtn = el('button', 'fc-dir-btn', '⇄ word → translation');
+    dirBtn.title = 'Swap card direction';
+    dirBtn.addEventListener('click', () => {
+      reversed = !reversed;
+      dirBtn.textContent = reversed ? '⇄ translation → word' : '⇄ word → translation';
+      updateCard();
+    });
 
     const scene = el('div', 'flashcard-scene');
     const fcEl  = el('div', 'flashcard');
@@ -1606,8 +1616,8 @@ OWL.Blocks = (function () {
     const doneScreen = el('div', 'fc-done-screen');
     doneScreen.style.display = 'none';
     doneScreen.appendChild(el('div', 'fc-done-emoji', '🦉'));
-    doneScreen.appendChild(el('h3', '', 'Świetna robota!'));
-    doneScreen.appendChild(el('p', '', 'Wszystkie karty przejrzane.'));
+    doneScreen.appendChild(el('h3', '', 'Great job!'));
+    doneScreen.appendChild(el('p', '', 'All cards reviewed.'));
 
     const srsLabel = el('div', '');
     srsLabel.style.cssText = 'text-align:center;font-size:.75rem;color:var(--ink-30);margin-bottom:.5rem;';
@@ -1626,16 +1636,29 @@ OWL.Blocks = (function () {
       clearChildren(front);
       clearChildren(back);
 
-      if (item.emoji) front.appendChild(el('div', 'fc-emoji', item.emoji));
-      front.appendChild(el('div', 'fc-word', item.word));
-      front.appendChild(el('div', 'fc-hint', 'kliknij żeby odkryć'));
-      const ttsF = ttsBtn(item.word, lang);
-      if (ttsF) front.appendChild(ttsF);
+      if (!reversed) {
+        // Normal: word on front, definition on back
+        if (item.emoji) front.appendChild(el('div', 'fc-emoji', item.emoji));
+        front.appendChild(el('div', 'fc-word', item.word));
+        front.appendChild(el('div', 'fc-hint', 'click to reveal'));
+        const ttsF = ttsBtn(item.word, lang);
+        if (ttsF) front.appendChild(ttsF);
 
-      back.appendChild(el('div', 'fc-def', item.definition || ''));
-      if (item.example) back.appendChild(el('div', 'fc-ex', item.example));
-      const ttsB = ttsBtn(item.definition || item.word, lang);
-      if (ttsB) back.appendChild(ttsB);
+        back.appendChild(el('div', 'fc-def', item.definition || ''));
+        if (item.example) back.appendChild(el('div', 'fc-ex', item.example));
+        const ttsB = ttsBtn(item.definition || item.word, lang);
+        if (ttsB) back.appendChild(ttsB);
+      } else {
+        // Reversed: definition on front, word on back
+        front.appendChild(el('div', 'fc-def', item.definition || ''));
+        if (item.example) front.appendChild(el('div', 'fc-ex', item.example));
+        front.appendChild(el('div', 'fc-hint', 'click to reveal'));
+
+        if (item.emoji) back.appendChild(el('div', 'fc-emoji', item.emoji));
+        back.appendChild(el('div', 'fc-word', item.word));
+        const ttsB = ttsBtn(item.word, lang);
+        if (ttsB) back.appendChild(ttsB);
+      }
 
       counterEl.textContent = (currentIdx + 1) + ' / ' + total;
       progressFill.style.width = Math.round((currentIdx / total) * 100) + '%';
@@ -1650,10 +1673,10 @@ OWL.Blocks = (function () {
     });
 
     const ratings = [
-      { cls: 'btn-blackout', label: 'Nie znam', q: 1 },
-      { cls: 'btn-hard',     label: 'Trudne',   q: 3 },
-      { cls: 'btn-good',     label: 'Dobrze',   q: 4 },
-      { cls: 'btn-easy',     label: 'Świetnie', q: 5 }
+      { cls: 'btn-blackout', label: "Don't know", q: 1 },
+      { cls: 'btn-hard',     label: 'Hard',       q: 3 },
+      { cls: 'btn-good',     label: 'Good',       q: 4 },
+      { cls: 'btn-easy',     label: 'Easy',       q: 5 }
     ];
     ratings.forEach(({ cls, label, q }) => {
       const btn = el('button', cls, label);
@@ -1670,6 +1693,7 @@ OWL.Blocks = (function () {
     });
 
     c.appendChild(counterEl);
+    c.appendChild(dirBtn);
     c.appendChild(progressBar);
     c.appendChild(srsLabel);
     c.appendChild(scene);

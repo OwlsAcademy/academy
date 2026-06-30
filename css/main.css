@@ -559,6 +559,19 @@ input:focus, textarea:focus, select:focus {
 .flashcard-back .fc-ex { font-size: .88rem; color: var(--ink-60); font-style: italic; }
 
 .fc-counter { text-align: center; font-size: .82rem; color: var(--ink-60); margin-bottom: .75rem; }
+.fc-dir-btn {
+  display: block;
+  margin: 0 auto .75rem;
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 4px 14px;
+  font-size: .78rem;
+  color: var(--ink-60);
+  cursor: pointer;
+  transition: border-color .15s, color .15s;
+}
+.fc-dir-btn:hover { border-color: var(--teal); color: var(--teal); }
 .fc-progress-bar { height: 4px; background: var(--border); border-radius: 2px; margin-bottom: 1.2rem; }
 .fc-progress-fill { height: 100%; background: var(--amber); border-radius: 2px; transition: width .4s; }
 
