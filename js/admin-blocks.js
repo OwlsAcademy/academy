@@ -147,6 +147,25 @@ window.OWL = window.OWL || {};
     return wrap;
   }
 
+  // CSV line parser — handles quoted fields (commas and newlines inside "…")
+  function parseCSVLine(line) {
+    const cols = [];
+    let col = '', inQ = false;
+    for (let i = 0; i < line.length; i++) {
+      const ch = line[i];
+      if (ch === '"') {
+        if (inQ && line[i + 1] === '"') { col += '"'; i++; }
+        else inQ = !inQ;
+      } else if (ch === ',' && !inQ) {
+        cols.push(col); col = '';
+      } else {
+        col += ch;
+      }
+    }
+    cols.push(col);
+    return cols;
+  }
+
   // Simple string list (each item is a string)
   function stringList(items, placeholder, onListChange, addLabel) {
     let current = items ? [...items] : [''];
@@ -999,7 +1018,60 @@ window.OWL = window.OWL || {};
       const wrap = el('div', { class: 'ab-editor-body' });
       wrap.appendChild(field('Tytuł', textInput(data.title, 'Tytuł', v => onChange({ ...data, title: v }))));
       wrap.appendChild(field('Instrukcja', textArea(data.instruction, 'Instrukcja...', v => onChange({ ...data, instruction: v }))));
-      wrap.appendChild(el('div', { class: 'ab-section-label' }, 'Fiszki'));
+
+      // Section header row: label + CSV import button
+      const sectionRow = el('div', { class: 'ab-section-row' });
+      sectionRow.appendChild(el('div', { class: 'ab-section-label' }, 'Fiszki'));
+
+      const csvInput = document.createElement('input');
+      csvInput.type = 'file';
+      csvInput.accept = '.csv,text/csv';
+      csvInput.style.display = 'none';
+
+      const csvBtn = btn('⬆ Importuj CSV', 'ab-btn-secondary', () => csvInput.click());
+
+      const csvHint = el('span', { class: 'ab-csv-hint' }, 'Format: słówko, definicja, przykład, emoji');
+
+      csvInput.addEventListener('change', () => {
+        const file = csvInput.files && csvInput.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const text = e.target.result;
+          const lines = text.split(/\r?\n/).filter(l => l.trim());
+          if (!lines.length) return;
+
+          // Auto-detect header: skip first line if it looks like a header
+          const firstCols = parseCSVLine(lines[0]).map(c => c.trim().toLowerCase());
+          const looksLikeHeader = ['słówko', 'word', 'slowo', 'słowo', 'en', 'ang'].some(h => firstCols[0] === h);
+          const dataLines = looksLikeHeader ? lines.slice(1) : lines;
+
+          const imported = dataLines
+            .map(line => {
+              const cols = parseCSVLine(line).map(c => c.trim());
+              if (!cols[0]) return null;
+              return {
+                word:       cols[0] || '',
+                definition: cols[1] || '',
+                example:    cols[2] || '',
+                emoji:      cols[3] || '',
+              };
+            })
+            .filter(Boolean);
+
+          if (!imported.length) return;
+          const merged = [...(data.items || []), ...imported];
+          onChange({ ...data, items: merged });
+          csvInput.value = '';
+        };
+        reader.readAsText(file, 'UTF-8');
+      });
+
+      sectionRow.appendChild(csvBtn);
+      sectionRow.appendChild(csvHint);
+      sectionRow.appendChild(csvInput);
+      wrap.appendChild(sectionRow);
+
       wrap.appendChild(dynamicList(
         data.items,
         (item, i, update, remove) => {
@@ -1703,6 +1775,32 @@ window.OWL = window.OWL || {};
   text-transform: uppercase;
   letter-spacing: 0.06em;
   margin-top: 6px;
+}
+
+.ab-section-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 2px;
+}
+
+.ab-btn-secondary {
+  background: #313244;
+  border: 1px solid #45475a;
+  color: #89b4fa;
+  font-size: 11px;
+  padding: 3px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.ab-btn-secondary:hover { background: #45475a; }
+
+.ab-csv-hint {
+  font-size: 10px;
+  color: #585b70;
+  font-style: italic;
 }
 
 .ab-dynlist { display: flex; flex-direction: column; gap: 6px; }
