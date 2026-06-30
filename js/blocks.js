@@ -1649,13 +1649,13 @@ OWL.Blocks = (function () {
         const ttsB = ttsBtn(item.definition || item.word, lang);
         if (ttsB) back.appendChild(ttsB);
       } else {
-        // Reversed: definition on front, word on back
+        // Reversed: definition on front, word + example on back
         front.appendChild(el('div', 'fc-def', item.definition || ''));
-        if (item.example) front.appendChild(el('div', 'fc-ex', item.example));
         front.appendChild(el('div', 'fc-hint', 'click to reveal'));
 
         if (item.emoji) back.appendChild(el('div', 'fc-emoji', item.emoji));
         back.appendChild(el('div', 'fc-word', item.word));
+        if (item.example) back.appendChild(el('div', 'fc-ex', item.example));
         const ttsB = ttsBtn(item.word, lang);
         if (ttsB) back.appendChild(ttsB);
       }
