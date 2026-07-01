@@ -1078,6 +1078,206 @@ document.getElementById('progressStudentFilter').addEventListener('change', () =
   else document.getElementById('progressDisplay').textContent = '';
 });
 
+// ── AI helpers for student progress ──────────────────────────────────────────
+
+async function callAISingleTurn(model, cfg, prompt) {
+  if (model === 'gemini') {
+    const key = cfg?.gemini_api_key;
+    if (!key) throw new Error('Brak klucza Gemini API. Ustaw go w Ustawienia.');
+    const res = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`,
+      { method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contents: [{ role: 'user', parts: [{ text: prompt }] }],
+                               generationConfig: { maxOutputTokens: 65536 } }) }
+    );
+    if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.error?.message || 'Błąd Gemini ' + res.status); }
+    const result = await res.json();
+    return result.candidates?.[0]?.content?.parts?.[0]?.text || '';
+  } else {
+    const key = cfg?.anthropic_api_key;
+    if (!key) throw new Error('Brak klucza Anthropic API. Ustaw go w Ustawienia.');
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-api-key': key,
+                 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+      body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 16000,
+                             messages: [{ role: 'user', content: prompt }] })
+    });
+    if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.error?.message || 'Błąd Anthropic ' + res.status); }
+    const result = await res.json();
+    return result.content?.[0]?.text || '';
+  }
+}
+
+function buildAnswerCheckPrompt(lesson, blockProgress) {
+  const LANG = { en:'English', de:'German', fr:'French', es:'Spanish', it:'Italian',
+                 pl:'Polish', nl:'Dutch', sv:'Swedish', nb:'Norwegian', da:'Danish',
+                 cs:'Czech', sk:'Slovak', ru:'Russian', uk:'Ukrainian', pt:'Portuguese',
+                 tr:'Turkish', ar:'Arabic', zh:'Chinese', ja:'Japanese' };
+  const targetLang = LANG[lesson.target_lang] || lesson.target_lang || 'English';
+  const level      = lesson.level || 'unspecified';
+
+  const lines = [
+    `You are a strict but fair ${targetLang} language teacher reviewing a student's exercises.`,
+    `Lesson: "${lesson.title || '?'}"  |  Level: ${level}  |  Language: ${targetLang}`,
+    '',
+    'INSTRUCTIONS:',
+    '- Go through EVERY exercise and EVERY answer below.',
+    '- Mark each answer ✓ correct or ✗ incorrect.',
+    '- For incorrect answers: explain the specific error and give the exact correct form.',
+    '- For free-text answers (translations, writing, open questions): evaluate grammar,',
+    '  vocabulary range, accuracy and naturalness. Note what is good and what needs work.',
+    '- Judge appropriateness for the ' + level + ' level.',
+    '- Be specific and educational — point to the exact mistake, not just "wrong".',
+    '- Respond in Polish (the teacher is Polish-speaking).',
+    '- Use clear formatting: exercise headings, numbered items.',
+    '',
+    '════ STUDENT ANSWERS ════',
+    ''
+  ];
+
+  const tabs = lesson.tabs || [];
+  const BTYPE = {
+    quiz:'Quiz', gapfill:'Uzupełnianie luk', matching:'Dopasowywanie',
+    translation:'Tłumaczenie', transform:'Transformacja zdań', errorcorrect:'Korekta błędów',
+    ownsentences:'Własne zdania', wordform:'Formy wyrazu', tf:'Prawda/Fałsz',
+    vic:'Słowo w kontekście', openq:'Pytania otwarte', sentcomp:'Dokończ zdanie',
+    ranking:'Ranking', checklist:'Lista kontrolna', 'hw-write':'Zadanie pisemne',
+    'vocab-mcq':'Vocab MCQ'
+  };
+
+  let num = 1;
+  tabs.forEach(tab => {
+    (tab.blocks || []).forEach(block => {
+      const saved = blockProgress[block.id];
+      if (!saved) return;
+      const d = block.data || {};
+      const answers = saved.answers || {};
+      const label = BTYPE[block.type] || block.type;
+
+      lines.push(`─── Ćwiczenie ${num}: ${label}${d.title ? ' — ' + d.title : ''} ───`);
+      num++;
+
+      switch (block.type) {
+        case 'quiz':
+        case 'vocab-mcq':
+          (d.questions || []).forEach((q, i) => {
+            if (answers[i] === undefined) return;
+            lines.push(`  ${i+1}. Pytanie: ${q.q || q.sentence}`);
+            if ((q.options||[]).length) lines.push(`     Opcje: ${q.options.join(' / ')}`);
+            lines.push(`     Odpowiedź ucznia: ${answers[i]}`);
+            if (q.answer) lines.push(`     Poprawna: ${q.answer}`);
+          });
+          break;
+
+        case 'gapfill':
+          (d.items || []).forEach((item, i) => {
+            if (answers[i] === undefined) return;
+            lines.push(`  ${i+1}. Zdanie: ${item.sentence}`);
+            lines.push(`     Odpowiedź ucznia: ${answers[i]}`);
+            if (item.answer) lines.push(`     Poprawna: ${item.answer}`);
+          });
+          break;
+
+        case 'translation':
+          (d.items || []).forEach((item, i) => {
+            if (!answers[i]) return;
+            lines.push(`  ${i+1}. Tekst źródłowy (PL): ${item.pl}`);
+            lines.push(`     Tłumaczenie ucznia: ${answers[i]}`);
+            if (item.en) lines.push(`     Wzorzec: ${item.en}`);
+          });
+          break;
+
+        case 'transform':
+          (d.items || []).forEach((item, i) => {
+            if (!answers[i]) return;
+            lines.push(`  ${i+1}. Zdanie: ${item.original}`);
+            if (item.instruction) lines.push(`     Polecenie: ${item.instruction}`);
+            lines.push(`     Odpowiedź ucznia: ${answers[i]}`);
+            if (item.answer) lines.push(`     Wzorzec: ${item.answer}`);
+          });
+          break;
+
+        case 'errorcorrect':
+          (d.items || []).forEach((item, i) => {
+            if (!answers[i]) return;
+            lines.push(`  ${i+1}. Zdanie z błędem: ${item.sentence}`);
+            lines.push(`     Korekta ucznia: ${answers[i]}`);
+            if (item.answer) lines.push(`     Poprawna wersja: ${item.answer}`);
+          });
+          break;
+
+        case 'ownsentences':
+          (d.structures || []).forEach((str, i) => {
+            if (!answers[i]) return;
+            lines.push(`  ${i+1}. Struktura: ${str}`);
+            lines.push(`     Zdanie ucznia: ${answers[i]}`);
+          });
+          break;
+
+        case 'openq':
+          (d.questions || []).forEach((q, i) => {
+            if (!answers[i]) return;
+            lines.push(`  ${i+1}. Pytanie: ${q.question}`);
+            lines.push(`     Odpowiedź ucznia: ${answers[i]}`);
+          });
+          break;
+
+        case 'sentcomp':
+          (d.starters || []).forEach((starter, i) => {
+            if (!answers[i]) return;
+            lines.push(`  ${i+1}. Początek: ${starter}`);
+            lines.push(`     Dokończenie ucznia: ${answers[i]}`);
+          });
+          break;
+
+        case 'wordform': {
+          const cols    = d.columns || ['Noun','Verb','Adjective','Adverb'];
+          const colKeys = ['noun','verb','adj','adv'];
+          (d.rows || []).forEach((row, ri) => {
+            const ra = answers[ri] || {};
+            lines.push(`  ${ri+1}. Rdzeń: ${row.root}`);
+            cols.forEach((col, ci) => {
+              const key = colKeys[ci];
+              const expected = row[key]?.answer || '';
+              lines.push(`     ${col}: uczeń="${ra[key]||'—'}"  poprawna="${expected}"`);
+            });
+          });
+          break;
+        }
+
+        case 'tf':
+          (d.items || []).forEach((item, i) => {
+            if (!answers[i]) return;
+            lines.push(`  ${i+1}. Zdanie: ${item.statement}`);
+            lines.push(`     Uczeń: ${answers[i]}  Poprawna: ${item.answer}`);
+          });
+          break;
+
+        case 'vic':
+          (d.items || []).forEach((item, i) => {
+            if (!answers[i]) return;
+            lines.push(`  ${i+1}. Kontekst: ${item.sentence}`);
+            if ((item.options||[]).length) lines.push(`     Opcje: ${item.options.join(' / ')}`);
+            lines.push(`     Uczeń: ${answers[i]}  Poprawna: ${item.answer}`);
+          });
+          break;
+
+        case 'hw-write':
+          if (saved.text) {
+            lines.push(`  Polecenie: ${d.prompt || d.title || '(brak)'}`);
+            lines.push(`  Praca ucznia:`);
+            lines.push(saved.text.split('\n').map(l => '    ' + l).join('\n'));
+          }
+          break;
+      }
+      lines.push('');
+    });
+  });
+
+  return lines.join('\n');
+}
+
 function renderStudentAnswers(lesson, blockProgress) {
   const tabs = lesson.tabs || [];
   const blocks = tabs.flatMap(t => t.blocks || []).filter(b => blockProgress[b.id]);
@@ -1347,7 +1547,7 @@ async function loadAllStudentProgress(sid) {
 
   const [{ data: assigned, error: aErr }, { data: progList }] = await Promise.all([
     sb.from('student_lessons')
-      .select('lesson_order, lessons(id, title, subtitle, level, header_emoji, tabs)')
+      .select('lesson_order, lessons(id, title, subtitle, level, header_emoji, target_lang, tabs)')
       .eq('student_id', sid)
       .order('lesson_order'),
     sb.from('lesson_progress').select('*').eq('student_id', sid)
@@ -1360,6 +1560,26 @@ async function loadAllStudentProgress(sid) {
     display.appendChild(el('p', null, 'Ten uczeń nie ma przypisanych żadnych lekcji.'));
     return;
   }
+
+  // AI model selector — shared across all lesson cards in this progress view
+  const { data: aiCfg } = await sb.from('config').select('anthropic_api_key, gemini_api_key').eq('id', 1).maybeSingle();
+  const hasClaude = !!(aiCfg?.anthropic_api_key);
+  const hasGemini = !!(aiCfg?.gemini_api_key);
+  const aiModelRow = el('div');
+  aiModelRow.style.cssText = 'display:flex;align-items:center;gap:.5rem;margin-bottom:1rem;flex-wrap:wrap';
+  const aiModelLabel = el('span', null, '🤖 Model AI:');
+  aiModelLabel.style.cssText = 'font-size:.82rem;color:var(--ink-60)';
+  const aiModelSel = document.createElement('select');
+  aiModelSel.style.cssText = 'padding:5px 8px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:.82rem';
+  if (hasClaude) aiModelSel.appendChild(new Option('Claude (Anthropic)', 'claude'));
+  if (hasGemini) aiModelSel.appendChild(new Option('Gemini (Google)', 'gemini'));
+  if (!hasClaude && !hasGemini) {
+    aiModelSel.appendChild(new Option('Brak klucza API — ustaw w Ustawienia', ''));
+    aiModelSel.disabled = true;
+  }
+  aiModelRow.appendChild(aiModelLabel);
+  aiModelRow.appendChild(aiModelSel);
+  display.appendChild(aiModelRow);
 
   const progMap = {};
   (progList || []).forEach(p => { progMap[p.lesson_id] = p; });
@@ -1423,10 +1643,81 @@ async function loadAllStudentProgress(sid) {
     });
     card.appendChild(stats);
 
-    // Student answers
+    // Student answers + AI check
     if (progExists) {
-      const answersEl = renderStudentAnswers(lesson, prog.block_progress || {});
+      const bp = prog.block_progress || {};
+      const answersEl = renderStudentAnswers(lesson, bp);
       if (answersEl) card.appendChild(answersEl);
+
+      // AI check button — only if there are block answers to review
+      const hasAnswers = Object.keys(bp).length > 0;
+      if (hasAnswers) {
+        const aiRow = el('div');
+        aiRow.style.cssText = 'margin-bottom:.6rem';
+
+        const aiCheckBtn = el('button', 'btn btn-ghost btn-sm', '🤖 Sprawdź z AI');
+        aiCheckBtn.title = 'Wyślij odpowiedzi ucznia do AI — krytyczna ocena nauczyciela języka';
+
+        const aiFeedbackArea = el('div');
+        aiFeedbackArea.style.cssText = 'display:none;margin-top:.6rem;padding:.75rem;background:#f8f9fd;border:1.5px solid var(--border);border-radius:var(--radius-sm)';
+
+        aiCheckBtn.addEventListener('click', async () => {
+          const model = aiModelSel.value;
+          if (!model) { showToast('Ustaw klucz API w Ustawienia.', 'error'); return; }
+
+          aiCheckBtn.disabled = true;
+          aiCheckBtn.textContent = '⏳ Analizuję...';
+          aiFeedbackArea.style.display = 'block';
+          aiFeedbackArea.textContent = 'Trwa analiza odpowiedzi ucznia...';
+
+          try {
+            const prompt = buildAnswerCheckPrompt(lesson, bp);
+            const text   = await callAISingleTurn(model, aiCfg, prompt);
+
+            aiFeedbackArea.textContent = '';
+
+            // Render response: split by lines, bold headers (lines starting with ─── or ##)
+            const feedbackHeader = el('div');
+            feedbackHeader.style.cssText = 'display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem';
+            const feedbackTitle = el('strong', null, '🤖 Ocena AI');
+            feedbackTitle.style.fontSize = '.84rem';
+            const copyBtn = el('button', 'btn btn-ghost btn-xs', '📋 Kopiuj');
+            copyBtn.addEventListener('click', () => { navigator.clipboard.writeText(text); showToast('Skopiowano!', 'success'); });
+            feedbackHeader.appendChild(feedbackTitle);
+            feedbackHeader.appendChild(copyBtn);
+            aiFeedbackArea.appendChild(feedbackHeader);
+
+            const pre = el('div');
+            pre.style.cssText = 'font-size:.82rem;line-height:1.6;white-space:pre-wrap;color:var(--ink)';
+            // Style headers (lines with ─── or starting with ##)
+            text.split('\n').forEach(line => {
+              const p = el('p');
+              p.style.cssText = 'margin:0 0 2px';
+              if (/^(───|##|════)/.test(line.trim())) {
+                p.style.cssText = 'margin:8px 0 3px;font-weight:700;color:var(--ink-60);font-size:.76rem;text-transform:uppercase;letter-spacing:.04em';
+              } else if (/^  ✓/.test(line)) {
+                p.style.color = 'var(--teal)';
+              } else if (/^  ✗/.test(line) || /^✗/.test(line)) {
+                p.style.color = 'var(--coral)';
+              }
+              p.textContent = line || ' ';
+              pre.appendChild(p);
+            });
+            aiFeedbackArea.appendChild(pre);
+
+            aiCheckBtn.textContent = '🔄 Sprawdź ponownie';
+          } catch(e) {
+            aiFeedbackArea.textContent = '❌ Błąd: ' + e.message;
+            aiCheckBtn.textContent = '🤖 Sprawdź z AI';
+          } finally {
+            aiCheckBtn.disabled = false;
+          }
+        });
+
+        aiRow.appendChild(aiCheckBtn);
+        aiRow.appendChild(aiFeedbackArea);
+        card.appendChild(aiRow);
+      }
     }
 
     // Mywords editor
