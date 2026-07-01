@@ -917,11 +917,16 @@ async function renderStudents() {
     tr.appendChild(assignCell);
 
     const actCell = el('td');
+    const viewBtn = el('button', 'btn btn-ghost btn-xs', '👁');
+    viewBtn.title = 'Otwórz listę lekcji w widoku ucznia';
+    viewBtn.style.marginRight = '4px';
+    viewBtn.addEventListener('click', () => window.open('index.html?previewAs=' + s.id, '_blank'));
     const editBtn = el('button', 'btn btn-ghost btn-xs', '✏️');
     editBtn.style.marginRight = '4px';
     editBtn.addEventListener('click', () => openStudentModal(s));
     const delBtn = el('button', 'btn btn-danger btn-xs', '🗑️');
     delBtn.addEventListener('click', () => deleteStudent(s.id, s.name));
+    actCell.appendChild(viewBtn);
     actCell.appendChild(editBtn);
     actCell.appendChild(delBtn);
     tr.appendChild(actCell);

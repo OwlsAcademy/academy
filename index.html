@@ -369,10 +369,30 @@ document.getElementById('logoutBtn').addEventListener('click', () => {
 });
 
 // ── AUTO-LOGIN ────────────────────────────────────────────────────
-const savedCode = localStorage.getItem('studentCode');
-if (savedCode) {
-  document.getElementById('codeInput').value = savedCode;
-  loadStudent(savedCode);
+const _previewAs = new URLSearchParams(location.search).get('previewAs');
+if (_previewAs) {
+  // Admin preview: load student by ID without touching localStorage
+  (async () => {
+    const { data: student } = await sb.from('students')
+      .select('id, name, code, prefix, last_active, streak_days, xp')
+      .eq('id', _previewAs)
+      .maybeSingle();
+    if (!student) {
+      document.body.innerHTML = '<div style="text-align:center;padding:3rem"><h2>Nie znaleziono ucznia</h2><p><a href="admin.html">← Wróć do panelu</a></p></div>';
+      return;
+    }
+    await showDashboard(student);
+    const banner = document.createElement('div');
+    banner.textContent = '👁 Podgląd jako uczeń — tryb tylko do odczytu';
+    banner.style.cssText = 'position:fixed;bottom:0;left:0;right:0;background:var(--amber);color:var(--ink);text-align:center;font-size:.82rem;font-weight:600;padding:7px;z-index:900;pointer-events:none';
+    document.body.appendChild(banner);
+  })();
+} else {
+  const savedCode = localStorage.getItem('studentCode');
+  if (savedCode) {
+    document.getElementById('codeInput').value = savedCode;
+    loadStudent(savedCode);
+  }
 }
 </script>
 <script>if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');</script>
