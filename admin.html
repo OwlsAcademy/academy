@@ -1078,6 +1078,266 @@ document.getElementById('progressStudentFilter').addEventListener('change', () =
   else document.getElementById('progressDisplay').textContent = '';
 });
 
+function renderStudentAnswers(lesson, blockProgress) {
+  const tabs = lesson.tabs || [];
+  const blocks = tabs.flatMap(t => t.blocks || []).filter(b => blockProgress[b.id]);
+  if (!blocks.length) return null;
+
+  const wrap = el('div');
+  wrap.style.marginBottom = '.6rem';
+
+  const toggleBtn = el('button', 'btn btn-ghost btn-sm', `📋 Odpowiedzi ucznia (${blocks.length})`);
+  toggleBtn.style.cssText = 'width:100%;text-align:left;margin-bottom:0';
+
+  const content = el('div');
+  content.style.cssText = 'display:none;margin-top:.5rem';
+
+  toggleBtn.addEventListener('click', () => {
+    const open = content.style.display !== 'none';
+    content.style.display = open ? 'none' : 'block';
+  });
+
+  const BTYPE = {
+    quiz:'Quiz', gapfill:'Uzupełnianie luk', matching:'Dopasowywanie',
+    translation:'Tłumaczenie', transform:'Transformacja zdań', errorcorrect:'Korekta błędów',
+    ownsentences:'Własne zdania', wordform:'Formy wyrazu', tf:'Prawda/Fałsz',
+    vic:'Słowo w kontekście', openq:'Pytania otwarte', sentcomp:'Dokończ zdanie',
+    ranking:'Ranking', checklist:'Lista kontrolna', 'hw-write':'Zadanie pisemne',
+    'vocab-mcq':'Vocab MCQ'
+  };
+
+  blocks.forEach(block => {
+    const saved  = blockProgress[block.id];
+    const d      = block.data || {};
+    const answers = saved.answers || {};
+
+    const bWrap = el('div');
+    bWrap.style.cssText = 'margin-bottom:.7rem;padding:.6rem .75rem;background:var(--cream);border-radius:6px;border:1px solid var(--border)';
+
+    // Header: type tag + block title
+    const bHdr = el('div');
+    bHdr.style.cssText = 'display:flex;gap:.4rem;align-items:baseline;flex-wrap:wrap;margin-bottom:.4rem';
+    const tag = el('span');
+    tag.textContent = BTYPE[block.type] || block.type;
+    tag.style.cssText = 'font-size:.66rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--teal);background:var(--teal-light);padding:2px 8px;border-radius:10px;flex-shrink:0';
+    bHdr.appendChild(tag);
+    if (d.title) {
+      const t = el('span');
+      t.textContent = d.title;
+      t.style.cssText = 'font-weight:600;font-size:.84rem';
+      bHdr.appendChild(t);
+    }
+    bWrap.appendChild(bHdr);
+
+    // Helper: one answer row
+    function aRow(prompt, answer, correct) {
+      const row = el('div');
+      row.style.cssText = 'font-size:.82rem;margin-bottom:3px;line-height:1.45';
+      if (prompt) {
+        const p = el('span');
+        p.textContent = prompt + '  ';
+        p.style.color = 'var(--ink-60)';
+        row.appendChild(p);
+      }
+      const a = el('span');
+      a.textContent = answer || '—';
+      a.style.cssText = 'font-weight:600;color:' + (correct === true ? 'var(--teal)' : correct === false ? 'var(--coral)' : 'var(--ink)');
+      row.appendChild(a);
+      return row;
+    }
+
+    function correctHint(text) {
+      const s = el('span');
+      s.textContent = ' → ' + text;
+      s.style.cssText = 'font-size:.76rem;color:var(--teal)';
+      return s;
+    }
+
+    function modelAnswer(text) {
+      const d2 = el('div');
+      d2.textContent = '✓ ' + text;
+      d2.style.cssText = 'font-size:.76rem;color:var(--ink-60);padding-left:.5rem;margin-bottom:4px';
+      return d2;
+    }
+
+    switch (block.type) {
+      case 'quiz':
+      case 'vocab-mcq': {
+        const qs = d.questions || [];
+        qs.forEach((q, i) => {
+          if (answers[i] === undefined) return;
+          const correct = answers[i] === q.answer;
+          const row = aRow(q.q || q.sentence, answers[i], correct);
+          if (!correct && q.answer) row.appendChild(correctHint(q.answer));
+          bWrap.appendChild(row);
+        });
+        if (saved.score !== undefined) {
+          const s = el('div');
+          s.textContent = `Wynik: ${saved.score} / ${qs.length}`;
+          s.style.cssText = 'font-size:.76rem;color:var(--ink-60);margin-top:3px';
+          bWrap.appendChild(s);
+        }
+        break;
+      }
+
+      case 'gapfill': {
+        const items = d.items || [];
+        items.forEach((item, i) => {
+          if (answers[i] === undefined) return;
+          const correct = String(answers[i]).trim().toLowerCase() === String(item.answer).trim().toLowerCase();
+          const row = aRow(item.sentence, answers[i], correct);
+          if (!correct && item.answer) row.appendChild(correctHint(item.answer));
+          bWrap.appendChild(row);
+        });
+        if (saved.score !== undefined) {
+          const s = el('div');
+          s.textContent = `Wynik: ${saved.score} / ${items.length}`;
+          s.style.cssText = 'font-size:.76rem;color:var(--ink-60);margin-top:3px';
+          bWrap.appendChild(s);
+        }
+        break;
+      }
+
+      case 'tf': {
+        (d.items || []).forEach((item, i) => {
+          if (answers[i] === undefined) return;
+          const correct = answers[i] === item.answer;
+          const row = aRow(item.statement, answers[i], correct);
+          if (!correct) row.appendChild(correctHint(item.answer));
+          bWrap.appendChild(row);
+        });
+        break;
+      }
+
+      case 'vic': {
+        (d.items || []).forEach((item, i) => {
+          if (answers[i] === undefined) return;
+          const correct = answers[i] === item.answer;
+          const row = aRow(item.sentence, answers[i], correct);
+          if (!correct && item.answer) row.appendChild(correctHint(item.answer));
+          bWrap.appendChild(row);
+        });
+        break;
+      }
+
+      case 'translation': {
+        (d.items || []).forEach((item, i) => {
+          if (!answers[i]) return;
+          bWrap.appendChild(aRow(item.pl, answers[i], null));
+        });
+        break;
+      }
+
+      case 'transform': {
+        (d.items || []).forEach((item, i) => {
+          if (!answers[i]) return;
+          bWrap.appendChild(aRow(item.original, answers[i], null));
+          if (item.answer) bWrap.appendChild(modelAnswer(item.answer));
+        });
+        break;
+      }
+
+      case 'errorcorrect': {
+        (d.items || []).forEach((item, i) => {
+          if (!answers[i]) return;
+          bWrap.appendChild(aRow(item.sentence, answers[i], null));
+          if (item.answer) bWrap.appendChild(modelAnswer(item.answer));
+        });
+        break;
+      }
+
+      case 'ownsentences': {
+        (d.structures || []).forEach((str, i) => {
+          if (!answers[i]) return;
+          bWrap.appendChild(aRow(str, answers[i], null));
+        });
+        break;
+      }
+
+      case 'openq': {
+        (d.questions || []).forEach((q, i) => {
+          if (!answers[i]) return;
+          bWrap.appendChild(aRow(q.question, answers[i], null));
+        });
+        break;
+      }
+
+      case 'sentcomp': {
+        (d.starters || []).forEach((starter, i) => {
+          if (!answers[i]) return;
+          bWrap.appendChild(aRow(starter + '…', answers[i], null));
+        });
+        break;
+      }
+
+      case 'wordform': {
+        const cols    = d.columns || ['Noun','Verb','Adjective','Adverb'];
+        const colKeys = ['noun','verb','adj','adv'];
+        (d.rows || []).forEach((row, ri) => {
+          const ra = answers[ri] || {};
+          const parts = cols.map((col, ci) => col + ': ' + (ra[colKeys[ci]] || '—'));
+          const r = el('div');
+          r.style.cssText = 'font-size:.82rem;margin-bottom:2px';
+          r.textContent = (row.root ? row.root + ' → ' : '') + parts.join('  ·  ');
+          bWrap.appendChild(r);
+        });
+        break;
+      }
+
+      case 'ranking': {
+        (saved.order || []).forEach((item, i) => {
+          const r = el('div');
+          r.style.cssText = 'font-size:.82rem;margin-bottom:2px';
+          r.textContent = (i + 1) + '. ' + item;
+          bWrap.appendChild(r);
+        });
+        break;
+      }
+
+      case 'checklist': {
+        (d.items || []).forEach((item, i) => {
+          const r = el('div');
+          r.style.cssText = 'font-size:.82rem;margin-bottom:2px';
+          r.textContent = ((saved.checked || {})[i] ? '☑ ' : '☐ ') + item;
+          bWrap.appendChild(r);
+        });
+        break;
+      }
+
+      case 'matching': {
+        const r = el('div');
+        r.style.cssText = 'font-size:.82rem';
+        r.textContent = saved.completed ? '✅ Ukończono' : '⏳ Nie ukończono';
+        bWrap.appendChild(r);
+        break;
+      }
+
+      case 'hw-write': {
+        if (saved.text) {
+          const r = el('div');
+          r.style.cssText = 'font-size:.83rem;white-space:pre-wrap;background:white;padding:.5rem .65rem;border-radius:4px;border:1px solid var(--border);max-height:160px;overflow-y:auto;line-height:1.5';
+          r.textContent = saved.text;
+          bWrap.appendChild(r);
+        }
+        break;
+      }
+
+      default: {
+        const r = el('div');
+        r.style.cssText = 'font-size:.74rem;color:var(--ink-60);font-family:monospace;white-space:pre-wrap;max-height:80px;overflow:auto';
+        r.textContent = JSON.stringify(saved, null, 2);
+        bWrap.appendChild(r);
+      }
+    }
+
+    content.appendChild(bWrap);
+  });
+
+  wrap.appendChild(toggleBtn);
+  wrap.appendChild(content);
+  return wrap;
+}
+
 async function loadAllStudentProgress(sid) {
   const display = document.getElementById('progressDisplay');
   display.textContent = '';
@@ -1087,7 +1347,7 @@ async function loadAllStudentProgress(sid) {
 
   const [{ data: assigned, error: aErr }, { data: progList }] = await Promise.all([
     sb.from('student_lessons')
-      .select('lesson_order, lessons(id, title, subtitle, level, header_emoji)')
+      .select('lesson_order, lessons(id, title, subtitle, level, header_emoji, tabs)')
       .eq('student_id', sid)
       .order('lesson_order'),
     sb.from('lesson_progress').select('*').eq('student_id', sid)
@@ -1162,6 +1422,12 @@ async function loadAllStudentProgress(sid) {
       stats.appendChild(s);
     });
     card.appendChild(stats);
+
+    // Student answers
+    if (progExists) {
+      const answersEl = renderStudentAnswers(lesson, prog.block_progress || {});
+      if (answersEl) card.appendChild(answersEl);
+    }
 
     // Mywords editor
     const mwWrap = el('div');
