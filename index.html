@@ -267,7 +267,7 @@ async function showDashboard(student) {
         const today = new Date().toISOString().slice(0, 10);
         return Object.values(prog.srs_data || {}).some(c => !c.nextReview || c.nextReview <= today);
       });
-      if (firstDue) window.location.href = 'lesson.html?id=' + firstDue.id + '&srs=1';
+      if (firstDue) window.location.href = 'lesson.html?id=' + firstDue.id + '&srs=1' + (_previewAs ? '&previewAs=' + _previewAs : '');
     });
   }
 
@@ -308,7 +308,7 @@ function renderLessons(lessons, progressMap) {
 
     const a = document.createElement('a');
     a.className = 'lesson-card' + (!l.available ? ' locked' : '') + (pct === 100 ? ' done' : '');
-    a.href = l.available ? 'lesson.html?id=' + encodeURIComponent(l.id) : '#';
+    a.href = l.available ? 'lesson.html?id=' + encodeURIComponent(l.id) + (_previewAs ? '&previewAs=' + _previewAs : '') : '#';
 
     const emojiDiv = el('div', 'lc-emoji', l.emoji || '📖');
     const info     = el('div', 'lc-info');
