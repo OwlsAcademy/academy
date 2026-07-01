@@ -1692,12 +1692,45 @@ OWL.Blocks = (function () {
       ratingWrap.appendChild(btn);
     });
 
+    // Prev / Next nav — navigate without rating
+    const navRow = el('div', 'fc-nav-row');
+
+    const prevBtn = el('button', 'fc-nav-btn', '◀ Prev');
+    prevBtn.addEventListener('click', () => {
+      if (currentIdx > 0) {
+        currentIdx--;
+      } else if (currentIdx >= orderedItems.length) {
+        // Coming back from done screen
+        currentIdx = orderedItems.length - 1;
+      }
+      // Restore visibility if coming from done screen
+      scene.style.display = '';
+      doneScreen.style.display = 'none';
+      srsLabel.style.display = '';
+      updateCard();
+    });
+
+    const nextBtn = el('button', 'fc-nav-btn', 'Next ▶');
+    nextBtn.addEventListener('click', () => {
+      if (currentIdx < orderedItems.length - 1) {
+        currentIdx++;
+        scene.style.display = '';
+        doneScreen.style.display = 'none';
+        srsLabel.style.display = '';
+        updateCard();
+      }
+    });
+
+    navRow.appendChild(prevBtn);
+    navRow.appendChild(nextBtn);
+
     c.appendChild(counterEl);
     c.appendChild(dirBtn);
     c.appendChild(progressBar);
     c.appendChild(srsLabel);
     c.appendChild(scene);
     c.appendChild(ratingWrap);
+    c.appendChild(navRow);
     c.appendChild(doneScreen);
 
     updateCard();

@@ -1131,8 +1131,12 @@ async function loadAllStudentProgress(sid) {
       sub.style.cssText = 'font-size:.82rem;color:var(--ink-60);margin-top:2px';
       info.appendChild(sub);
     }
+    const viewBtn = el('button', 'btn btn-ghost btn-xs', '👁 Widok ucznia');
+    viewBtn.title = 'Otwórz lekcję w widoku ucznia (nowa karta)';
+    viewBtn.addEventListener('click', () => window.open('lesson.html?id=' + lesson.id + '&previewAs=' + sid, '_blank'));
     hdr.appendChild(emojiEl);
     hdr.appendChild(info);
+    hdr.appendChild(viewBtn);
     card.appendChild(hdr);
 
     if (!progExists) {
