@@ -1120,21 +1120,24 @@ function buildAnswerCheckPrompt(lesson, blockProgress) {
                  cs:'Czech', sk:'Slovak', ru:'Russian', uk:'Ukrainian', pt:'Portuguese',
                  tr:'Turkish', ar:'Arabic', zh:'Chinese', ja:'Japanese' };
   const targetLang = LANG[lesson.target_lang] || lesson.target_lang || 'English';
+  const instrLang  = LANG[lesson.instruction_lang] || lesson.instruction_lang || 'Polish';
   const level      = lesson.level || 'unspecified';
 
   const lines = [
     `You are a strict but fair ${targetLang} language teacher reviewing a student's exercises.`,
-    `Lesson: "${lesson.title || '?'}"  |  Level: ${level}  |  Language: ${targetLang}`,
+    `Lesson: "${lesson.title || '?'}"  |  Level: ${level}  |  Target language: ${targetLang}  |  Instruction language: ${instrLang}`,
     '',
     'INSTRUCTIONS:',
+    `- The student is learning ${targetLang}. ALL student answers are expected to be in ${targetLang}.`,
+    `  Evaluate them strictly as ${targetLang} exercises — not as ${instrLang} or any other language.`,
     '- Go through EVERY exercise and EVERY answer below.',
     '- Mark each answer ✓ correct or ✗ incorrect.',
-    '- For incorrect answers: explain the specific error and give the exact correct form.',
-    '- For free-text answers (translations, writing, open questions): evaluate grammar,',
-    '  vocabulary range, accuracy and naturalness. Note what is good and what needs work.',
-    '- Judge appropriateness for the ' + level + ' level.',
+    '- For incorrect answers: explain the specific error and give the exact correct form in ' + targetLang + '.',
+    `- For free-text answers (translations, writing, open questions): evaluate grammar,`,
+    `  vocabulary range, accuracy and naturalness in ${targetLang}. Note what is good and what needs work.`,
+    '- Judge appropriateness for the ' + level + ' level of ' + targetLang + '.',
     '- Be specific and educational — point to the exact mistake, not just "wrong".',
-    '- Respond in Polish (the teacher is Polish-speaking).',
+    `- Respond in ${targetLang}.`,
     '- Use clear formatting: exercise headings, numbered items.',
     '',
     '════ STUDENT ANSWERS ════',
@@ -1552,7 +1555,7 @@ async function loadAllStudentProgress(sid) {
 
   const [{ data: assigned, error: aErr }, { data: progList }] = await Promise.all([
     sb.from('student_lessons')
-      .select('lesson_order, lessons(id, title, subtitle, level, header_emoji, target_lang, tabs)')
+      .select('lesson_order, lessons(id, title, subtitle, level, header_emoji, target_lang, instruction_lang, tabs)')
       .eq('student_id', sid)
       .order('lesson_order'),
     sb.from('lesson_progress').select('*').eq('student_id', sid)
