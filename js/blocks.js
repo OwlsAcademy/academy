@@ -459,8 +459,8 @@ OWL.Blocks = (function () {
         vi.appendChild(img);
       }
       if (item.emoji) vi.appendChild(el('span', 'vi-emoji', item.emoji));
-      vi.appendChild(el('span', 'vi-pl', item.pl));
-      const enEl = el('span', 'vi-en', item.en);
+      vi.appendChild(el('span', 'vi-pl', item.en));   // target language — shown by default
+      const enEl = el('span', 'vi-en', item.pl);      // translation — revealed on click
       vi.appendChild(enEl);
       const flip = el('span', 'vi-flip-hint', 'kliknij →');
       vi.appendChild(flip);
