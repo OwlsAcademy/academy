@@ -774,11 +774,13 @@ async function saveLesson() {
   if (!meta.title) return showToast('Wpisz tytuł lekcji.', 'error');
 
   const payload = {
-    title:        meta.title,
-    subtitle:     meta.subtitle,
-    level:        meta.level,
-    header_emoji: meta.header_emoji,
-    tabs:         lessonTabs
+    title:            meta.title,
+    subtitle:         meta.subtitle,
+    level:            meta.level,
+    header_emoji:     meta.header_emoji,
+    target_lang:      meta.target_lang,
+    instruction_lang: meta.instruction_lang,
+    tabs:             lessonTabs
   };
 
   try {
