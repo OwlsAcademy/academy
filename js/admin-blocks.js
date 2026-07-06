@@ -143,12 +143,19 @@ window.OWL = window.OWL || {};
       wrap.appendChild(addBtn);
     }
 
+    wrap.appendItems = function(newItems) {
+      current = [...current, ...newItems];
+      onListChange([...current]);
+      redraw();
+    };
+
     redraw();
     return wrap;
   }
 
-  // CSV line parser — handles quoted fields (commas and newlines inside "…")
-  function parseCSVLine(line) {
+  // CSV line parser — handles quoted fields (RFC-4180); sep defaults to ','
+  function parseCSVLine(line, sep) {
+    sep = sep || ',';
     const cols = [];
     let col = '', inQ = false;
     for (let i = 0; i < line.length; i++) {
@@ -156,7 +163,7 @@ window.OWL = window.OWL || {};
       if (ch === '"') {
         if (inQ && line[i + 1] === '"') { col += '"'; i++; }
         else inQ = !inQ;
-      } else if (ch === ',' && !inQ) {
+      } else if (ch === sep && !inQ) {
         cols.push(col); col = '';
       } else {
         col += ch;
@@ -1029,50 +1036,45 @@ window.OWL = window.OWL || {};
       csvInput.style.display = 'none';
 
       const csvBtn = btn('⬆ Importuj CSV', 'ab-btn-secondary', () => csvInput.click());
-
-      const csvHint = el('span', { class: 'ab-csv-hint' }, 'Format: słówko, definicja, przykład, emoji');
+      const csvStatus = el('span', { class: 'ab-csv-hint' }, 'Format: słówko; definicja; przykład; emoji (pierwszy wiersz = nagłówek)');
 
       csvInput.addEventListener('change', () => {
         const file = csvInput.files && csvInput.files[0];
         if (!file) return;
+        csvStatus.textContent = '⏳ Wczytywanie...';
         const reader = new FileReader();
         reader.onload = (e) => {
           const text = e.target.result;
           const lines = text.split(/\r?\n/).filter(l => l.trim());
-          if (!lines.length) return;
+          if (lines.length < 2) { csvStatus.textContent = 'Brak danych (tylko nagłówek?).'; return; }
 
-          // Auto-detect header: skip first line if it looks like a header
-          const firstCols = parseCSVLine(lines[0]).map(c => c.trim().toLowerCase());
-          const looksLikeHeader = ['słówko', 'word', 'slowo', 'słowo', 'en', 'ang'].some(h => firstCols[0] === h);
-          const dataLines = looksLikeHeader ? lines.slice(1) : lines;
+          // Auto-detect separator: more semicolons than commas → use ;
+          const sep = (lines[0].split(';').length > lines[0].split(',').length) ? ';' : ',';
 
-          const imported = dataLines
+          // Always treat first line as header
+          const imported = lines.slice(1)
             .map(line => {
-              const cols = parseCSVLine(line).map(c => c.trim());
+              const cols = parseCSVLine(line, sep).map(c => c.trim());
               if (!cols[0]) return null;
-              return {
-                word:       cols[0] || '',
-                definition: cols[1] || '',
-                example:    cols[2] || '',
-                emoji:      cols[3] || '',
-              };
+              return { word: cols[0] || '', definition: cols[1] || '', example: cols[2] || '', emoji: cols[3] || '' };
             })
             .filter(Boolean);
 
-          if (!imported.length) return;
-          const merged = [...(data.items || []), ...imported];
-          onChange({ ...data, items: merged });
           csvInput.value = '';
+          if (!imported.length) { csvStatus.textContent = 'Brak danych po nagłówku.'; return; }
+          list.appendItems(imported);
+          csvStatus.textContent = `✓ Dodano ${imported.length} fiszek`;
+          setTimeout(() => { csvStatus.textContent = 'Format: słówko; definicja; przykład; emoji (pierwszy wiersz = nagłówek)'; }, 3000);
         };
         reader.readAsText(file, 'UTF-8');
       });
 
       sectionRow.appendChild(csvBtn);
-      sectionRow.appendChild(csvHint);
+      sectionRow.appendChild(csvStatus);
       sectionRow.appendChild(csvInput);
       wrap.appendChild(sectionRow);
 
-      wrap.appendChild(dynamicList(
+      const list = dynamicList(
         data.items,
         (item, i, update, remove) => {
           const box = el('div', { class: 'ab-flash-item' });
@@ -1085,7 +1087,8 @@ window.OWL = window.OWL || {};
         },
         v => onChange({ ...data, items: v }),
         'Dodaj fiszkę'
-      ));
+      );
+      wrap.appendChild(list);
       return wrap;
     },
 
