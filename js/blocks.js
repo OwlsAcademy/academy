@@ -2065,26 +2065,60 @@ OWL.Blocks = (function () {
     const c = card();
     if (d.title) c.appendChild(blockTitle(d.title));
 
-    const tbl = document.createElement('table');
-    tbl.className = 'pairs-table';
-    const thead = tbl.createTHead();
-    const hrow = thead.insertRow();
-    ['Rola A', 'Rola B', 'Sytuacja'].forEach(h => {
-      const th = document.createElement('th');
-      th.textContent = h;
-      hrow.appendChild(th);
+    const BADGE_LABEL = { pair: '👥 Para', group: '👥 Grupa', class: '🏫 Klasa' };
+
+    (d.activities || []).forEach(act => {
+      const actDiv = el('div', '');
+      actDiv.style.cssText = 'background:var(--cream);border-radius:var(--radius-sm);padding:14px 16px;margin-bottom:14px;';
+
+      // Header row: badge + title + time
+      const hdr = el('div', '');
+      hdr.style.cssText = 'display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap;';
+      if (act.badge) {
+        const chip = el('span', 'chip amber', BADGE_LABEL[act.badge] || act.badge);
+        hdr.appendChild(chip);
+      }
+      if (act.title) {
+        const t = el('strong', '', act.title);
+        hdr.appendChild(t);
+      }
+      if (act.time) {
+        const tm = el('span', '', '⏱ ' + act.time);
+        tm.style.cssText = 'font-size:.8rem;color:var(--ink-60);margin-left:auto;';
+        hdr.appendChild(tm);
+      }
+      if (hdr.children.length) actDiv.appendChild(hdr);
+
+      // Instructions
+      if (act.instructions) {
+        const ins = el('p', '', act.instructions);
+        ins.style.cssText = 'font-size:.9rem;margin-bottom:8px;white-space:pre-wrap;';
+        actDiv.appendChild(ins);
+      }
+
+      // Items (roles / scenarios)
+      const items = (act.items || []).filter(Boolean);
+      if (items.length) {
+        const ul = document.createElement('ul');
+        ul.style.cssText = 'margin:0;padding-left:1.4em;font-size:.9rem;';
+        items.forEach(item => {
+          const li = el('li', '', item);
+          li.style.marginBottom = '3px';
+          ul.appendChild(li);
+        });
+        actDiv.appendChild(ul);
+      }
+
+      c.appendChild(actDiv);
     });
-    const tbody = tbl.createTBody();
-    (d.activities || []).forEach((act, ri) => {
-      const tr = tbody.insertRow();
-      if (ri % 2 === 1) tr.style.background = 'var(--cream)';
-      [act.roleA, act.roleB, act.situation].forEach(text => {
-        const td = tr.insertCell();
-        td.textContent = text || '';
-        td.style.cssText = 'padding:10px 14px;border-bottom:1px solid var(--border);vertical-align:top;font-size:.9rem;';
-      });
-    });
-    c.appendChild(tbl);
+
+    if (d.usefulLanguage) {
+      const ul = el('div', 'instruction-banner');
+      ul.style.marginTop = '4px';
+      ul.textContent = '💬 ' + d.usefulLanguage;
+      c.appendChild(ul);
+    }
+
     return wrap(c);
   }
 

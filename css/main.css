@@ -458,7 +458,7 @@ input:focus, textarea:focus, select:focus {
   font-family: Georgia, serif;
   line-height: 1;
 }
-.quote-block p { font-family: Georgia, serif; font-size: 1.15rem; color: white; line-height: 1.6; position: relative; }
+.quote-block p { font-family: Georgia, serif; font-size: 1.15rem; color: white; line-height: 1.6; position: relative; white-space: pre-wrap; }
 .quote-block cite { display: block; margin-top: 12px; font-size: .82rem; color: var(--amber-light); font-style: normal; font-weight: 600; }
 
 /* ── ARTICLE / READING BOX ─────────────────────────────────────── */
@@ -862,6 +862,7 @@ input:focus, textarea:focus, select:focus {
   color: var(--teal);
   font-weight: 600;
   margin-bottom: 14px;
+  white-space: pre-wrap;
 }
 
 /* ── OWN SENTENCES ─────────────────────────────────────────────── */

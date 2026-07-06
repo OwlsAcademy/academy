@@ -367,29 +367,29 @@ window.OWL = window.OWL || {};
 
     quote(data, onChange) {
       const wrap = el('div', { class: 'ab-editor-body' });
-      wrap.appendChild(field('Cytat', textArea(data.text, 'Treść cytatu...', v => onChange({ ...data, text: v }))));
-      wrap.appendChild(field('Autor', textInput(data.author, 'Autor cytatu', v => onChange({ ...data, author: v }))));
+      wrap.appendChild(field('Cytat', textArea(data.text, 'Treść cytatu...', v => onChange(Object.assign(data, { text: v })))));
+      wrap.appendChild(field('Autor', textInput(data.author, 'Autor cytatu', v => onChange(Object.assign(data, { author: v })))));
       return wrap;
     },
 
     discussion(data, onChange) {
       const wrap = el('div', { class: 'ab-editor-body' });
-      wrap.appendChild(field('Tytuł sekcji', textInput(data.title, 'Tytuł', v => onChange({ ...data, title: v }))));
-      wrap.appendChild(field('Etykieta (badge)', textInput(data.label, 'np. Dyskusja', v => onChange({ ...data, label: v }))));
-      wrap.appendChild(field('Opis/instrukcja', textArea(data.description, 'Opis dla uczniów...', v => onChange({ ...data, description: v }))));
+      wrap.appendChild(field('Tytuł sekcji', textInput(data.title, 'Tytuł', v => onChange(Object.assign(data, { title: v })))));
+      wrap.appendChild(field('Etykieta (badge)', textInput(data.label, 'np. Dyskusja', v => onChange(Object.assign(data, { label: v })))));
+      wrap.appendChild(field('Opis/instrukcja', textArea(data.description, 'Opis dla uczniów...', v => onChange(Object.assign(data, { description: v })))));
       wrap.appendChild(el('div', { class: 'ab-section-label' }, 'Pytania do dyskusji'));
-      wrap.appendChild(stringList(data.questions, 'Pytanie...', v => onChange({ ...data, questions: v }), 'Dodaj pytanie'));
+      wrap.appendChild(stringList(data.questions, 'Pytanie...', v => onChange(Object.assign(data, { questions: v })), 'Dodaj pytanie'));
       return wrap;
     },
 
     article(data, onChange) {
       const wrap = el('div', { class: 'ab-editor-body' });
-      wrap.appendChild(field('Tytuł artykułu', textInput(data.articleTitle, 'Tytuł', v => onChange({ ...data, articleTitle: v }))));
-      wrap.appendChild(field('Notatka pod tytułem', textInput(data.articleNote, 'np. B2 • 3 min read', v => onChange({ ...data, articleNote: v }))));
-      wrap.appendChild(field('Tekst (HTML)', textArea(data.text, "Tekst artykułu... <span class='hl'>słowo</span> dla podświetlenia", v => onChange({ ...data, text: v }))));
-      wrap.appendChild(field('Przypis', textInput(data.footnote, 'Źródło lub przypis', v => onChange({ ...data, footnote: v }))));
+      wrap.appendChild(field('Tytuł artykułu', textInput(data.articleTitle, 'Tytuł', v => onChange(Object.assign(data, { articleTitle: v })))));
+      wrap.appendChild(field('Notatka pod tytułem', textInput(data.articleNote, 'np. B2 • 3 min read', v => onChange(Object.assign(data, { articleNote: v })))));
+      wrap.appendChild(field('Tekst (HTML)', textArea(data.text, "Tekst artykułu... <span class='hl'>słowo</span> dla podświetlenia", v => onChange(Object.assign(data, { text: v })))));
+      wrap.appendChild(field('Przypis', textInput(data.footnote, 'Źródło lub przypis', v => onChange(Object.assign(data, { footnote: v })))));
       wrap.appendChild(el('div', { class: 'ab-section-label' }, 'Obraz (opcjonalny)'));
-      wrap.appendChild(imageField(data.image, v => onChange({ ...data, image: v })));
+      wrap.appendChild(imageField(data.image, v => onChange(Object.assign(data, { image: v }))));
       return wrap;
     },
 
@@ -408,7 +408,7 @@ window.OWL = window.OWL || {};
           box.appendChild(btn('✕ Usuń', 'ab-btn-remove', remove));
           return box;
         },
-        v => onChange({ ...data, items: v }),
+        v => onChange(Object.assign(data, { items: v })),
         'Dodaj słowo'
       );
       // Fix default item for add
@@ -420,29 +420,29 @@ window.OWL = window.OWL || {};
     image(data, onChange) {
       const wrap = el('div', { class: 'ab-editor-body' });
       wrap.appendChild(el('div', { class: 'ab-section-label' }, 'Obraz'));
-      wrap.appendChild(imageField(data.image, v => onChange({ ...data, image: v })));
-      wrap.appendChild(field('Podpis', textInput(data.caption, 'Podpis obrazu', v => onChange({ ...data, caption: v }))));
+      wrap.appendChild(imageField(data.image, v => onChange(Object.assign(data, { image: v }))));
+      wrap.appendChild(field('Podpis', textInput(data.caption, 'Podpis obrazu', v => onChange(Object.assign(data, { caption: v })))));
       return wrap;
     },
 
     html(data, onChange) {
       const wrap = el('div', { class: 'ab-editor-body' });
-      wrap.appendChild(field('Kod HTML', textArea(data.html, '<p>Kod HTML...</p>', v => onChange({ ...data, html: v }))));
+      wrap.appendChild(field('Kod HTML', textArea(data.html, '<p>Kod HTML...</p>', v => onChange(Object.assign(data, { html: v })))));
       return wrap;
     },
 
     info(data, onChange) {
       const wrap = el('div', { class: 'ab-editor-body' });
-      wrap.appendChild(field('Tytuł', textInput(data.title, 'Tytuł alertu', v => onChange({ ...data, title: v }))));
-      wrap.appendChild(field('Treść', textArea(data.text, 'Treść informacji...', v => onChange({ ...data, text: v }))));
-      wrap.appendChild(field('Wskazówka (tip)', textInput(data.tip, 'Opcjonalna wskazówka', v => onChange({ ...data, tip: v }))));
-      wrap.appendChild(field('Kolor', selectInput(data.color, COLOR_OPTIONS, v => onChange({ ...data, color: v }))));
+      wrap.appendChild(field('Tytuł', textInput(data.title, 'Tytuł alertu', v => onChange(Object.assign(data, { title: v })))));
+      wrap.appendChild(field('Treść', textArea(data.text, 'Treść informacji...', v => onChange(Object.assign(data, { text: v })))));
+      wrap.appendChild(field('Wskazówka (tip)', textInput(data.tip, 'Opcjonalna wskazówka', v => onChange(Object.assign(data, { tip: v })))));
+      wrap.appendChild(field('Kolor', selectInput(data.color, COLOR_OPTIONS, v => onChange(Object.assign(data, { color: v })))));
       return wrap;
     },
 
     table(data, onChange) {
       const wrap = el('div', { class: 'ab-editor-body' });
-      wrap.appendChild(field('Tytuł', textInput(data.title, 'Tytuł tabeli', v => onChange({ ...data, title: v }))));
+      wrap.appendChild(field('Tytuł', textInput(data.title, 'Tytuł tabeli', v => onChange(Object.assign(data, { title: v })))));
 
       // Headers
       wrap.appendChild(el('div', { class: 'ab-section-label' }, 'Nagłówki kolumn'));
@@ -450,51 +450,47 @@ window.OWL = window.OWL || {};
         data.headers,
         'Nagłówek...',
         v => {
-          // Adjust rows when headers change
           const newHeaders = v;
           const rows = data.rows.map(row => {
             const r = [...row];
             while (r.length < newHeaders.length) r.push('');
             return r.slice(0, newHeaders.length);
           });
-          onChange({ ...data, headers: newHeaders, rows });
+          onChange(Object.assign(data, { headers: newHeaders, rows }));
+          redrawRows();
         },
         'Dodaj nagłówek'
       ));
 
-      // Rows
+      // Rows — use data directly (mutated via Object.assign, no currentData alias)
       wrap.appendChild(el('div', { class: 'ab-section-label' }, 'Wiersze'));
-      let currentData = data;
       const rowsWrap = el('div', { class: 'ab-table-rows' });
 
       function redrawRows() {
         rowsWrap.replaceChildren();
-        (currentData.rows || []).forEach((row, ri) => {
+        (data.rows || []).forEach((row, ri) => {
           const rowDiv = el('div', { class: 'ab-table-row' });
-          (currentData.headers || []).forEach((h, ci) => {
+          (data.headers || []).forEach((h, ci) => {
             const inp = textInput(row[ci] || '', h || ('Kol. ' + (ci + 1)), v => {
-              const newRows = currentData.rows.map((r, idx) => {
+              const newRows = data.rows.map((r, idx) => {
                 if (idx !== ri) return r;
                 const nr = [...r];
                 nr[ci] = v;
                 return nr;
               });
-              currentData = { ...currentData, rows: newRows };
-              onChange(currentData);
+              onChange(Object.assign(data, { rows: newRows }));
             });
             rowDiv.appendChild(inp);
           });
           rowDiv.appendChild(btn('✕', 'ab-btn-remove', () => {
-            currentData = { ...currentData, rows: currentData.rows.filter((_, idx) => idx !== ri) };
-            onChange(currentData);
+            onChange(Object.assign(data, { rows: data.rows.filter((_, idx) => idx !== ri) }));
             redrawRows();
           }));
           rowsWrap.appendChild(rowDiv);
         });
         rowsWrap.appendChild(btn('+ Dodaj wiersz', 'ab-btn-add', () => {
-          const newRow = new Array((currentData.headers || []).length).fill('');
-          currentData = { ...currentData, rows: [...(currentData.rows || []), newRow] };
-          onChange(currentData);
+          const newRow = new Array((data.headers || []).length).fill('');
+          onChange(Object.assign(data, { rows: [...(data.rows || []), newRow] }));
           redrawRows();
         }));
       }
@@ -506,7 +502,7 @@ window.OWL = window.OWL || {};
 
     examples(data, onChange) {
       const wrap = el('div', { class: 'ab-editor-body' });
-      wrap.appendChild(field('Tytuł', textInput(data.title, 'Tytuł sekcji', v => onChange({ ...data, title: v }))));
+      wrap.appendChild(field('Tytuł', textInput(data.title, 'Tytuł sekcji', v => onChange(Object.assign(data, { title: v })))));
       wrap.appendChild(el('div', { class: 'ab-section-label' }, 'Przykłady'));
       wrap.appendChild(dynamicList(
         data.items,
@@ -517,7 +513,7 @@ window.OWL = window.OWL || {};
           row.appendChild(btn('✕', 'ab-btn-remove', remove));
           return row;
         },
-        v => onChange({ ...data, items: v }),
+        v => onChange(Object.assign(data, { items: v })),
         'Dodaj przykład'
       ));
       return wrap;
@@ -525,22 +521,22 @@ window.OWL = window.OWL || {};
 
     'two-col'(data, onChange) {
       const wrap = el('div', { class: 'ab-editor-body' });
-      wrap.appendChild(field('Tytuł', textInput(data.title, 'Tytuł sekcji', v => onChange({ ...data, title: v }))));
-      const cols = data.columns || [{ header: '', items: [''] }, { header: '', items: [''] }];
+      wrap.appendChild(field('Tytuł', textInput(data.title, 'Tytuł sekcji', v => onChange(Object.assign(data, { title: v })))));
+      if (!data.columns) data.columns = [{ header: '', items: [''] }, { header: '', items: [''] }];
 
       [0, 1].forEach(ci => {
-        const col = cols[ci] || { header: '', items: [''] };
+        const col = data.columns[ci] || { header: '', items: [''] };
         wrap.appendChild(el('div', { class: 'ab-section-label' }, `Kolumna ${ci + 1}`));
         wrap.appendChild(field('Nagłówek kolumny', textInput(col.header, 'Nagłówek', v => {
-          const newCols = cols.map((c, idx) => idx === ci ? { ...c, header: v } : c);
-          onChange({ ...data, columns: newCols });
+          const newCols = data.columns.map((c, idx) => idx === ci ? { ...c, header: v } : c);
+          onChange(Object.assign(data, { columns: newCols }));
         })));
         wrap.appendChild(stringList(
           col.items,
           'Element listy',
           v => {
-            const newCols = cols.map((c, idx) => idx === ci ? { ...c, items: v } : c);
-            onChange({ ...data, columns: newCols });
+            const newCols = data.columns.map((c, idx) => idx === ci ? { ...c, items: v } : c);
+            onChange(Object.assign(data, { columns: newCols }));
           },
           'Dodaj element'
         ));
@@ -550,17 +546,17 @@ window.OWL = window.OWL || {};
 
     cta(data, onChange) {
       const wrap = el('div', { class: 'ab-editor-body' });
-      wrap.appendChild(field('Etykieta', textInput(data.label, 'np. Następny krok', v => onChange({ ...data, label: v }))));
-      wrap.appendChild(field('Tekst główny', textInput(data.text, 'Treść CTA', v => onChange({ ...data, text: v }))));
-      wrap.appendChild(field('Tekst przycisku', textInput(data.buttonText, 'np. Przejdź dalej', v => onChange({ ...data, buttonText: v }))));
-      wrap.appendChild(field('ID docelowej zakładki', textInput(data.targetTabId, 'tabId', v => onChange({ ...data, targetTabId: v }))));
+      wrap.appendChild(field('Etykieta', textInput(data.label, 'np. Następny krok', v => onChange(Object.assign(data, { label: v })))));
+      wrap.appendChild(field('Tekst główny', textInput(data.text, 'Treść CTA', v => onChange(Object.assign(data, { text: v })))));
+      wrap.appendChild(field('Tekst przycisku', textInput(data.buttonText, 'np. Przejdź dalej', v => onChange(Object.assign(data, { buttonText: v })))));
+      wrap.appendChild(field('ID docelowej zakładki', textInput(data.targetTabId, 'tabId', v => onChange(Object.assign(data, { targetTabId: v })))));
       return wrap;
     },
 
     comprehension(data, onChange) {
       const wrap = el('div', { class: 'ab-editor-body' });
-      wrap.appendChild(field('Tytuł', textInput(data.title, 'Tytuł', v => onChange({ ...data, title: v }))));
-      wrap.appendChild(field('Instrukcja', textArea(data.instruction, 'Instrukcja...', v => onChange({ ...data, instruction: v }))));
+      wrap.appendChild(field('Tytuł', textInput(data.title, 'Tytuł', v => onChange(Object.assign(data, { title: v })))));
+      wrap.appendChild(field('Instrukcja', textArea(data.instruction, 'Instrukcja...', v => onChange(Object.assign(data, { instruction: v })))));
       wrap.appendChild(el('div', { class: 'ab-section-label' }, 'Pytania'));
       wrap.appendChild(dynamicList(
         data.questions,
@@ -571,7 +567,7 @@ window.OWL = window.OWL || {};
           box.appendChild(btn('✕ Usuń', 'ab-btn-remove', remove));
           return box;
         },
-        v => onChange({ ...data, questions: v }),
+        v => onChange(Object.assign(data, { questions: v })),
         'Dodaj pytanie'
       ));
       return wrap;
@@ -579,8 +575,8 @@ window.OWL = window.OWL || {};
 
     'vocab-grid'(data, onChange) {
       const wrap = el('div', { class: 'ab-editor-body' });
-      wrap.appendChild(field('Tytuł', textInput(data.title, 'Tytuł', v => onChange({ ...data, title: v }))));
-      wrap.appendChild(field('Kolor', selectInput(data.color, COLOR_OPTIONS, v => onChange({ ...data, color: v }))));
+      wrap.appendChild(field('Tytuł', textInput(data.title, 'Tytuł', v => onChange(Object.assign(data, { title: v })))));
+      wrap.appendChild(field('Kolor', selectInput(data.color, COLOR_OPTIONS, v => onChange(Object.assign(data, { color: v })))));
       wrap.appendChild(el('div', { class: 'ab-section-label' }, 'Słówka'));
       wrap.appendChild(dynamicList(
         data.items,
@@ -593,7 +589,7 @@ window.OWL = window.OWL || {};
           box.appendChild(btn('✕ Usuń', 'ab-btn-remove', remove));
           return box;
         },
-        v => onChange({ ...data, items: v }),
+        v => onChange(Object.assign(data, { items: v })),
         'Dodaj słówko'
       ));
       return wrap;
@@ -601,8 +597,8 @@ window.OWL = window.OWL || {};
 
     'vocab-table'(data, onChange) {
       const wrap = el('div', { class: 'ab-editor-body' });
-      wrap.appendChild(field('Tytuł', textInput(data.title, 'Tytuł', v => onChange({ ...data, title: v }))));
-      wrap.appendChild(field('Kolor', selectInput(data.color, COLOR_OPTIONS, v => onChange({ ...data, color: v }))));
+      wrap.appendChild(field('Tytuł', textInput(data.title, 'Tytuł', v => onChange(Object.assign(data, { title: v })))));
+      wrap.appendChild(field('Kolor', selectInput(data.color, COLOR_OPTIONS, v => onChange(Object.assign(data, { color: v })))));
       wrap.appendChild(el('div', { class: 'ab-section-label' }, 'Słówka'));
       wrap.appendChild(dynamicList(
         data.items,
@@ -614,7 +610,7 @@ window.OWL = window.OWL || {};
           box.appendChild(btn('✕ Usuń', 'ab-btn-remove', remove));
           return box;
         },
-        v => onChange({ ...data, items: v }),
+        v => onChange(Object.assign(data, { items: v })),
         'Dodaj słówko'
       ));
       return wrap;
@@ -622,7 +618,7 @@ window.OWL = window.OWL || {};
 
     phrases(data, onChange) {
       const wrap = el('div', { class: 'ab-editor-body' });
-      wrap.appendChild(field('Tytuł', textInput(data.title, 'Tytuł sekcji', v => onChange({ ...data, title: v }))));
+      wrap.appendChild(field('Tytuł', textInput(data.title, 'Tytuł sekcji', v => onChange(Object.assign(data, { title: v })))));
       wrap.appendChild(el('div', { class: 'ab-section-label' }, 'Zwroty'));
       wrap.appendChild(dynamicList(
         data.items,
@@ -633,7 +629,7 @@ window.OWL = window.OWL || {};
           row.appendChild(btn('✕', 'ab-btn-remove', remove));
           return row;
         },
-        v => onChange({ ...data, items: v }),
+        v => onChange(Object.assign(data, { items: v })),
         'Dodaj zwrot'
       ));
       return wrap;
@@ -641,8 +637,8 @@ window.OWL = window.OWL || {};
 
     quiz(data, onChange) {
       const wrap = el('div', { class: 'ab-editor-body' });
-      wrap.appendChild(field('Tytuł', textInput(data.title, 'Tytuł quizu', v => onChange({ ...data, title: v }))));
-      wrap.appendChild(field('Instrukcja', textArea(data.instruction, 'Instrukcja...', v => onChange({ ...data, instruction: v }))));
+      wrap.appendChild(field('Tytuł', textInput(data.title, 'Tytuł quizu', v => onChange(Object.assign(data, { title: v })))));
+      wrap.appendChild(field('Instrukcja', textArea(data.instruction, 'Instrukcja...', v => onChange(Object.assign(data, { instruction: v })))));
       wrap.appendChild(el('div', { class: 'ab-section-label' }, 'Pytania'));
       wrap.appendChild(dynamicList(
         data.questions,
@@ -662,7 +658,7 @@ window.OWL = window.OWL || {};
           box.appendChild(btn('✕ Usuń pytanie', 'ab-btn-remove', remove));
           return box;
         },
-        v => onChange({ ...data, questions: v }),
+        v => onChange(Object.assign(data, { questions: v })),
         'Dodaj pytanie'
       ));
       return wrap;
@@ -670,10 +666,10 @@ window.OWL = window.OWL || {};
 
     gapfill(data, onChange) {
       const wrap = el('div', { class: 'ab-editor-body' });
-      wrap.appendChild(field('Tytuł', textInput(data.title, 'Tytuł', v => onChange({ ...data, title: v }))));
-      wrap.appendChild(field('Instrukcja', textArea(data.instruction, 'Instrukcja...', v => onChange({ ...data, instruction: v }))));
+      wrap.appendChild(field('Tytuł', textInput(data.title, 'Tytuł', v => onChange(Object.assign(data, { title: v })))));
+      wrap.appendChild(field('Instrukcja', textArea(data.instruction, 'Instrukcja...', v => onChange(Object.assign(data, { instruction: v })))));
       wrap.appendChild(el('div', { class: 'ab-section-label' }, 'Bank słów'));
-      wrap.appendChild(stringList(data.wordbank, 'Słowo...', v => onChange({ ...data, wordbank: v }), 'Dodaj słowo'));
+      wrap.appendChild(stringList(data.wordbank, 'Słowo...', v => onChange(Object.assign(data, { wordbank: v })), 'Dodaj słowo'));
       wrap.appendChild(el('div', { class: 'ab-section-label' }, 'Zdania z lukami'));
       wrap.appendChild(dynamicList(
         data.items,
@@ -684,7 +680,7 @@ window.OWL = window.OWL || {};
           box.appendChild(btn('✕ Usuń', 'ab-btn-remove', remove));
           return box;
         },
-        v => onChange({ ...data, items: v }),
+        v => onChange(Object.assign(data, { items: v })),
         'Dodaj zdanie'
       ));
       return wrap;
@@ -692,8 +688,8 @@ window.OWL = window.OWL || {};
 
     matching(data, onChange) {
       const wrap = el('div', { class: 'ab-editor-body' });
-      wrap.appendChild(field('Tytuł', textInput(data.title, 'Tytuł', v => onChange({ ...data, title: v }))));
-      wrap.appendChild(field('Instrukcja', textArea(data.instruction, 'Instrukcja...', v => onChange({ ...data, instruction: v }))));
+      wrap.appendChild(field('Tytuł', textInput(data.title, 'Tytuł', v => onChange(Object.assign(data, { title: v })))));
+      wrap.appendChild(field('Instrukcja', textArea(data.instruction, 'Instrukcja...', v => onChange(Object.assign(data, { instruction: v })))));
       wrap.appendChild(el('div', { class: 'ab-section-label' }, 'Pary'));
       wrap.appendChild(dynamicList(
         data.pairs,
@@ -704,7 +700,7 @@ window.OWL = window.OWL || {};
           row.appendChild(btn('✕', 'ab-btn-remove', remove));
           return row;
         },
-        v => onChange({ ...data, pairs: v }),
+        v => onChange(Object.assign(data, { pairs: v })),
         'Dodaj parę'
       ));
       return wrap;
@@ -712,8 +708,8 @@ window.OWL = window.OWL || {};
 
     translation(data, onChange) {
       const wrap = el('div', { class: 'ab-editor-body' });
-      wrap.appendChild(field('Tytuł', textInput(data.title, 'Tytuł', v => onChange({ ...data, title: v }))));
-      wrap.appendChild(field('Instrukcja', textArea(data.instruction, 'Instrukcja...', v => onChange({ ...data, instruction: v }))));
+      wrap.appendChild(field('Tytuł', textInput(data.title, 'Tytuł', v => onChange(Object.assign(data, { title: v })))));
+      wrap.appendChild(field('Instrukcja', textArea(data.instruction, 'Instrukcja...', v => onChange(Object.assign(data, { instruction: v })))));
       wrap.appendChild(el('div', { class: 'ab-section-label' }, 'Zdania do tłumaczenia'));
       wrap.appendChild(dynamicList(
         data.items,
@@ -725,7 +721,7 @@ window.OWL = window.OWL || {};
           box.appendChild(btn('✕ Usuń', 'ab-btn-remove', remove));
           return box;
         },
-        v => onChange({ ...data, items: v }),
+        v => onChange(Object.assign(data, { items: v })),
         'Dodaj zdanie'
       ));
       return wrap;
@@ -733,8 +729,8 @@ window.OWL = window.OWL || {};
 
     scramble(data, onChange) {
       const wrap = el('div', { class: 'ab-editor-body' });
-      wrap.appendChild(field('Tytuł', textInput(data.title, 'Tytuł', v => onChange({ ...data, title: v }))));
-      wrap.appendChild(field('Instrukcja', textArea(data.instruction, 'Instrukcja...', v => onChange({ ...data, instruction: v }))));
+      wrap.appendChild(field('Tytuł', textInput(data.title, 'Tytuł', v => onChange(Object.assign(data, { title: v })))));
+      wrap.appendChild(field('Instrukcja', textArea(data.instruction, 'Instrukcja...', v => onChange(Object.assign(data, { instruction: v })))));
       wrap.appendChild(el('div', { class: 'ab-section-label' }, 'Zdania (zostaną rozsypane)'));
       wrap.appendChild(dynamicList(
         data.items,
@@ -745,7 +741,7 @@ window.OWL = window.OWL || {};
           box.appendChild(btn('✕ Usuń', 'ab-btn-remove', remove));
           return box;
         },
-        v => onChange({ ...data, items: v }),
+        v => onChange(Object.assign(data, { items: v })),
         'Dodaj zdanie'
       ));
       return wrap;
@@ -753,8 +749,8 @@ window.OWL = window.OWL || {};
 
     transform(data, onChange) {
       const wrap = el('div', { class: 'ab-editor-body' });
-      wrap.appendChild(field('Tytuł', textInput(data.title, 'Tytuł', v => onChange({ ...data, title: v }))));
-      wrap.appendChild(field('Instrukcja', textArea(data.instruction, 'Instrukcja...', v => onChange({ ...data, instruction: v }))));
+      wrap.appendChild(field('Tytuł', textInput(data.title, 'Tytuł', v => onChange(Object.assign(data, { title: v })))));
+      wrap.appendChild(field('Instrukcja', textArea(data.instruction, 'Instrukcja...', v => onChange(Object.assign(data, { instruction: v })))));
       wrap.appendChild(el('div', { class: 'ab-section-label' }, 'Zdania do transformacji'));
       wrap.appendChild(dynamicList(
         data.items,
@@ -767,7 +763,7 @@ window.OWL = window.OWL || {};
           box.appendChild(btn('✕ Usuń', 'ab-btn-remove', remove));
           return box;
         },
-        v => onChange({ ...data, items: v }),
+        v => onChange(Object.assign(data, { items: v })),
         'Dodaj zdanie'
       ));
       return wrap;
@@ -775,8 +771,8 @@ window.OWL = window.OWL || {};
 
     errorcorrect(data, onChange) {
       const wrap = el('div', { class: 'ab-editor-body' });
-      wrap.appendChild(field('Tytuł', textInput(data.title, 'Tytuł', v => onChange({ ...data, title: v }))));
-      wrap.appendChild(field('Instrukcja', textArea(data.instruction, 'Instrukcja...', v => onChange({ ...data, instruction: v }))));
+      wrap.appendChild(field('Tytuł', textInput(data.title, 'Tytuł', v => onChange(Object.assign(data, { title: v })))));
+      wrap.appendChild(field('Instrukcja', textArea(data.instruction, 'Instrukcja...', v => onChange(Object.assign(data, { instruction: v })))));
       wrap.appendChild(el('div', { class: 'ab-section-label' }, 'Zdania z błędami'));
       wrap.appendChild(dynamicList(
         data.items,
@@ -788,7 +784,7 @@ window.OWL = window.OWL || {};
           box.appendChild(btn('✕ Usuń', 'ab-btn-remove', remove));
           return box;
         },
-        v => onChange({ ...data, items: v }),
+        v => onChange(Object.assign(data, { items: v })),
         'Dodaj zdanie'
       ));
       return wrap;
@@ -796,17 +792,17 @@ window.OWL = window.OWL || {};
 
     ownsentences(data, onChange) {
       const wrap = el('div', { class: 'ab-editor-body' });
-      wrap.appendChild(field('Tytuł', textInput(data.title, 'Tytuł', v => onChange({ ...data, title: v }))));
-      wrap.appendChild(field('Instrukcja', textArea(data.instruction, 'Instrukcja...', v => onChange({ ...data, instruction: v }))));
+      wrap.appendChild(field('Tytuł', textInput(data.title, 'Tytuł', v => onChange(Object.assign(data, { title: v })))));
+      wrap.appendChild(field('Instrukcja', textArea(data.instruction, 'Instrukcja...', v => onChange(Object.assign(data, { instruction: v })))));
       wrap.appendChild(el('div', { class: 'ab-section-label' }, 'Struktury'));
-      wrap.appendChild(stringList(data.structures, 'Struktura/szablon...', v => onChange({ ...data, structures: v }), 'Dodaj strukturę'));
+      wrap.appendChild(stringList(data.structures, 'Struktura/szablon...', v => onChange(Object.assign(data, { structures: v })), 'Dodaj strukturę'));
       return wrap;
     },
 
     collocations(data, onChange) {
       const wrap = el('div', { class: 'ab-editor-body' });
-      wrap.appendChild(field('Tytuł', textInput(data.title, 'Tytuł', v => onChange({ ...data, title: v }))));
-      wrap.appendChild(field('Instrukcja', textArea(data.instruction, 'Instrukcja...', v => onChange({ ...data, instruction: v }))));
+      wrap.appendChild(field('Tytuł', textInput(data.title, 'Tytuł', v => onChange(Object.assign(data, { title: v })))));
+      wrap.appendChild(field('Instrukcja', textArea(data.instruction, 'Instrukcja...', v => onChange(Object.assign(data, { instruction: v })))));
       wrap.appendChild(el('div', { class: 'ab-section-label' }, 'Grupy kolokacji'));
       wrap.appendChild(dynamicList(
         data.blocks,
@@ -840,7 +836,7 @@ window.OWL = window.OWL || {};
           box.appendChild(btn('✕ Usuń grupę', 'ab-btn-remove', removeBlock));
           return box;
         },
-        v => onChange({ ...data, blocks: v }),
+        v => onChange(Object.assign(data, { blocks: v })),
         'Dodaj grupę'
       ));
       return wrap;
@@ -848,8 +844,8 @@ window.OWL = window.OWL || {};
 
     wordform(data, onChange) {
       const wrap = el('div', { class: 'ab-editor-body' });
-      wrap.appendChild(field('Tytuł', textInput(data.title, 'Tytuł', v => onChange({ ...data, title: v }))));
-      wrap.appendChild(field('Instrukcja', textArea(data.instruction, 'Instrukcja...', v => onChange({ ...data, instruction: v }))));
+      wrap.appendChild(field('Tytuł', textInput(data.title, 'Tytuł', v => onChange(Object.assign(data, { title: v })))));
+      wrap.appendChild(field('Instrukcja', textArea(data.instruction, 'Instrukcja...', v => onChange(Object.assign(data, { instruction: v })))));
 
       const COL_KEYS = ['noun', 'verb', 'adj', 'adv'];
       const cols = data.columns || ['Noun', 'Verb', 'Adjective', 'Adverb'];
@@ -885,7 +881,7 @@ window.OWL = window.OWL || {};
           box.appendChild(btn('✕ Usuń', 'ab-btn-remove', remove));
           return box;
         },
-        v => onChange({ ...data, rows: v }),
+        v => onChange(Object.assign(data, { rows: v })),
         'Dodaj wiersz'
       ));
       return wrap;
@@ -893,8 +889,8 @@ window.OWL = window.OWL || {};
 
     tf(data, onChange) {
       const wrap = el('div', { class: 'ab-editor-body' });
-      wrap.appendChild(field('Tytuł', textInput(data.title, 'Tytuł', v => onChange({ ...data, title: v }))));
-      wrap.appendChild(field('Instrukcja', textArea(data.instruction, 'Instrukcja...', v => onChange({ ...data, instruction: v }))));
+      wrap.appendChild(field('Tytuł', textInput(data.title, 'Tytuł', v => onChange(Object.assign(data, { title: v })))));
+      wrap.appendChild(field('Instrukcja', textArea(data.instruction, 'Instrukcja...', v => onChange(Object.assign(data, { instruction: v })))));
       wrap.appendChild(el('div', { class: 'ab-section-label' }, 'Zdania'));
       wrap.appendChild(dynamicList(
         data.items,
@@ -910,7 +906,7 @@ window.OWL = window.OWL || {};
           box.appendChild(btn('✕ Usuń', 'ab-btn-remove', remove));
           return box;
         },
-        v => onChange({ ...data, items: v }),
+        v => onChange(Object.assign(data, { items: v })),
         'Dodaj zdanie'
       ));
       return wrap;
@@ -918,8 +914,8 @@ window.OWL = window.OWL || {};
 
     jumble(data, onChange) {
       const wrap = el('div', { class: 'ab-editor-body' });
-      wrap.appendChild(field('Tytuł', textInput(data.title, 'Tytuł', v => onChange({ ...data, title: v }))));
-      wrap.appendChild(field('Instrukcja', textArea(data.instruction, 'Instrukcja...', v => onChange({ ...data, instruction: v }))));
+      wrap.appendChild(field('Tytuł', textInput(data.title, 'Tytuł', v => onChange(Object.assign(data, { title: v })))));
+      wrap.appendChild(field('Instrukcja', textArea(data.instruction, 'Instrukcja...', v => onChange(Object.assign(data, { instruction: v })))));
       wrap.appendChild(el('div', { class: 'ab-section-label' }, 'Zdania do rozsypania'));
       wrap.appendChild(dynamicList(
         data.items,
@@ -929,7 +925,7 @@ window.OWL = window.OWL || {};
           row.appendChild(btn('✕', 'ab-btn-remove', remove));
           return row;
         },
-        v => onChange({ ...data, items: v }),
+        v => onChange(Object.assign(data, { items: v })),
         'Dodaj zdanie'
       ));
       return wrap;
@@ -937,8 +933,8 @@ window.OWL = window.OWL || {};
 
     vic(data, onChange) {
       const wrap = el('div', { class: 'ab-editor-body' });
-      wrap.appendChild(field('Tytuł', textInput(data.title, 'Tytuł', v => onChange({ ...data, title: v }))));
-      wrap.appendChild(field('Instrukcja', textArea(data.instruction, 'Instrukcja...', v => onChange({ ...data, instruction: v }))));
+      wrap.appendChild(field('Tytuł', textInput(data.title, 'Tytuł', v => onChange(Object.assign(data, { title: v })))));
+      wrap.appendChild(field('Instrukcja', textArea(data.instruction, 'Instrukcja...', v => onChange(Object.assign(data, { instruction: v })))));
       wrap.appendChild(el('div', { class: 'ab-section-label' }, 'Pytania'));
       wrap.appendChild(dynamicList(
         data.items,
@@ -958,7 +954,7 @@ window.OWL = window.OWL || {};
           box.appendChild(btn('✕ Usuń', 'ab-btn-remove', remove));
           return box;
         },
-        v => onChange({ ...data, items: v }),
+        v => onChange(Object.assign(data, { items: v })),
         'Dodaj pytanie'
       ));
       return wrap;
@@ -966,8 +962,8 @@ window.OWL = window.OWL || {};
 
     openq(data, onChange) {
       const wrap = el('div', { class: 'ab-editor-body' });
-      wrap.appendChild(field('Tytuł', textInput(data.title, 'Tytuł', v => onChange({ ...data, title: v }))));
-      wrap.appendChild(field('Instrukcja', textArea(data.instruction, 'Instrukcja...', v => onChange({ ...data, instruction: v }))));
+      wrap.appendChild(field('Tytuł', textInput(data.title, 'Tytuł', v => onChange(Object.assign(data, { title: v })))));
+      wrap.appendChild(field('Instrukcja', textArea(data.instruction, 'Instrukcja...', v => onChange(Object.assign(data, { instruction: v })))));
       wrap.appendChild(el('div', { class: 'ab-section-label' }, 'Pytania'));
       wrap.appendChild(dynamicList(
         data.questions,
@@ -978,7 +974,7 @@ window.OWL = window.OWL || {};
           box.appendChild(btn('✕ Usuń', 'ab-btn-remove', remove));
           return box;
         },
-        v => onChange({ ...data, questions: v }),
+        v => onChange(Object.assign(data, { questions: v })),
         'Dodaj pytanie'
       ));
       return wrap;
@@ -986,17 +982,17 @@ window.OWL = window.OWL || {};
 
     sentcomp(data, onChange) {
       const wrap = el('div', { class: 'ab-editor-body' });
-      wrap.appendChild(field('Tytuł', textInput(data.title, 'Tytuł', v => onChange({ ...data, title: v }))));
-      wrap.appendChild(field('Instrukcja', textArea(data.instruction, 'Instrukcja...', v => onChange({ ...data, instruction: v }))));
+      wrap.appendChild(field('Tytuł', textInput(data.title, 'Tytuł', v => onChange(Object.assign(data, { title: v })))));
+      wrap.appendChild(field('Instrukcja', textArea(data.instruction, 'Instrukcja...', v => onChange(Object.assign(data, { instruction: v })))));
       wrap.appendChild(el('div', { class: 'ab-section-label' }, 'Początki zdań'));
-      wrap.appendChild(stringList(data.starters, 'Początek zdania...', v => onChange({ ...data, starters: v }), 'Dodaj starter'));
+      wrap.appendChild(stringList(data.starters, 'Początek zdania...', v => onChange(Object.assign(data, { starters: v })), 'Dodaj starter'));
       return wrap;
     },
 
     'vocab-mcq'(data, onChange) {
       const wrap = el('div', { class: 'ab-editor-body' });
-      wrap.appendChild(field('Tytuł', textInput(data.title, 'Tytuł', v => onChange({ ...data, title: v }))));
-      wrap.appendChild(field('Instrukcja', textArea(data.instruction, 'Instrukcja...', v => onChange({ ...data, instruction: v }))));
+      wrap.appendChild(field('Tytuł', textInput(data.title, 'Tytuł', v => onChange(Object.assign(data, { title: v })))));
+      wrap.appendChild(field('Instrukcja', textArea(data.instruction, 'Instrukcja...', v => onChange(Object.assign(data, { instruction: v })))));
       wrap.appendChild(el('div', { class: 'ab-section-label' }, 'Pytania'));
       wrap.appendChild(dynamicList(
         data.questions,
@@ -1015,7 +1011,7 @@ window.OWL = window.OWL || {};
           box.appendChild(btn('✕ Usuń', 'ab-btn-remove', remove));
           return box;
         },
-        v => onChange({ ...data, questions: v }),
+        v => onChange(Object.assign(data, { questions: v })),
         'Dodaj pytanie'
       ));
       return wrap;
@@ -1023,8 +1019,8 @@ window.OWL = window.OWL || {};
 
     flashcards(data, onChange) {
       const wrap = el('div', { class: 'ab-editor-body' });
-      wrap.appendChild(field('Tytuł', textInput(data.title, 'Tytuł', v => onChange({ ...data, title: v }))));
-      wrap.appendChild(field('Instrukcja', textArea(data.instruction, 'Instrukcja...', v => onChange({ ...data, instruction: v }))));
+      wrap.appendChild(field('Tytuł', textInput(data.title, 'Tytuł', v => onChange(Object.assign(data, { title: v })))));
+      wrap.appendChild(field('Instrukcja', textArea(data.instruction, 'Instrukcja...', v => onChange(Object.assign(data, { instruction: v })))));
 
       // Section header row: label + CSV import button
       const sectionRow = el('div', { class: 'ab-section-row' });
@@ -1085,7 +1081,7 @@ window.OWL = window.OWL || {};
           box.appendChild(btn('✕ Usuń', 'ab-btn-remove', remove));
           return box;
         },
-        v => onChange({ ...data, items: v }),
+        v => onChange(Object.assign(data, { items: v })),
         'Dodaj fiszkę'
       );
       wrap.appendChild(list);
@@ -1094,7 +1090,7 @@ window.OWL = window.OWL || {};
 
     conversation(data, onChange) {
       const wrap = el('div', { class: 'ab-editor-body' });
-      wrap.appendChild(field('Tytuł', textInput(data.title, 'Tytuł', v => onChange({ ...data, title: v }))));
+      wrap.appendChild(field('Tytuł', textInput(data.title, 'Tytuł', v => onChange(Object.assign(data, { title: v })))));
       wrap.appendChild(el('div', { class: 'ab-section-label' }, 'Prompty rozmowy'));
       wrap.appendChild(dynamicList(
         data.prompts,
@@ -1107,7 +1103,7 @@ window.OWL = window.OWL || {};
           box.appendChild(btn('✕ Usuń', 'ab-btn-remove', remove));
           return box;
         },
-        v => onChange({ ...data, prompts: v }),
+        v => onChange(Object.assign(data, { prompts: v })),
         'Dodaj prompt'
       ));
       return wrap;
@@ -1115,25 +1111,25 @@ window.OWL = window.OWL || {};
 
     warmup(data, onChange) {
       const wrap = el('div', { class: 'ab-editor-body' });
-      wrap.appendChild(field('Tytuł', textInput(data.title, 'Tytuł', v => onChange({ ...data, title: v }))));
+      wrap.appendChild(field('Tytuł', textInput(data.title, 'Tytuł', v => onChange(Object.assign(data, { title: v })))));
       wrap.appendChild(el('div', { class: 'ab-section-label' }, 'Zdania/prompty'));
-      wrap.appendChild(stringList(data.sentences, 'Zdanie lub prompt...', v => onChange({ ...data, sentences: v }), 'Dodaj zdanie'));
+      wrap.appendChild(stringList(data.sentences, 'Zdanie lub prompt...', v => onChange(Object.assign(data, { sentences: v })), 'Dodaj zdanie'));
       return wrap;
     },
 
     hotseats(data, onChange) {
       const wrap = el('div', { class: 'ab-editor-body' });
-      wrap.appendChild(field('Tytuł', textInput(data.title, 'Tytuł', v => onChange({ ...data, title: v }))));
-      wrap.appendChild(field('Timer (sekundy)', numberInput(data.timer, '60', v => onChange({ ...data, timer: v }))));
+      wrap.appendChild(field('Tytuł', textInput(data.title, 'Tytuł', v => onChange(Object.assign(data, { title: v })))));
+      wrap.appendChild(field('Timer (sekundy)', numberInput(data.timer, '60', v => onChange(Object.assign(data, { timer: v })))));
       wrap.appendChild(el('div', { class: 'ab-section-label' }, 'Pytania'));
-      wrap.appendChild(stringList(data.questions, 'Pytanie...', v => onChange({ ...data, questions: v }), 'Dodaj pytanie'));
-      wrap.appendChild(field('Przydatne zwroty', textArea(data.usefulLanguage || '', 'np. I think... / In my opinion...', v => onChange({ ...data, usefulLanguage: v }))));
+      wrap.appendChild(stringList(data.questions, 'Pytanie...', v => onChange(Object.assign(data, { questions: v })), 'Dodaj pytanie'));
+      wrap.appendChild(field('Przydatne zwroty', textArea(data.usefulLanguage || '', 'np. I think... / In my opinion...', v => onChange(Object.assign(data, { usefulLanguage: v })))));
       return wrap;
     },
 
     opinions(data, onChange) {
       const wrap = el('div', { class: 'ab-editor-body' });
-      wrap.appendChild(field('Tytuł', textInput(data.title, 'Tytuł', v => onChange({ ...data, title: v }))));
+      wrap.appendChild(field('Tytuł', textInput(data.title, 'Tytuł', v => onChange(Object.assign(data, { title: v })))));
       wrap.appendChild(el('div', { class: 'ab-section-label' }, 'Karty opinii'));
       wrap.appendChild(dynamicList(
         data.cards,
@@ -1144,16 +1140,16 @@ window.OWL = window.OWL || {};
           box.appendChild(btn('✕ Usuń', 'ab-btn-remove', remove));
           return box;
         },
-        v => onChange({ ...data, cards: v }),
+        v => onChange(Object.assign(data, { cards: v })),
         'Dodaj kartę'
       ));
-      wrap.appendChild(field('Przydatne zwroty', textArea(data.usefulLanguage || '', 'np. I agree that... / I strongly believe...', v => onChange({ ...data, usefulLanguage: v }))));
+      wrap.appendChild(field('Przydatne zwroty', textArea(data.usefulLanguage || '', 'np. I agree that... / I strongly believe...', v => onChange(Object.assign(data, { usefulLanguage: v })))));
       return wrap;
     },
 
     wyr(data, onChange) {
       const wrap = el('div', { class: 'ab-editor-body' });
-      wrap.appendChild(field('Tytuł', textInput(data.title, 'Tytuł', v => onChange({ ...data, title: v }))));
+      wrap.appendChild(field('Tytuł', textInput(data.title, 'Tytuł', v => onChange(Object.assign(data, { title: v })))));
       wrap.appendChild(el('div', { class: 'ab-section-label' }, 'Pytania Would You Rather'));
       wrap.appendChild(dynamicList(
         data.questions,
@@ -1165,37 +1161,37 @@ window.OWL = window.OWL || {};
           box.appendChild(btn('✕ Usuń', 'ab-btn-remove', remove));
           return box;
         },
-        v => onChange({ ...data, questions: v }),
+        v => onChange(Object.assign(data, { questions: v })),
         'Dodaj pytanie'
       ));
-      wrap.appendChild(field('Przydatne zwroty', textArea(data.usefulLanguage || '', 'np. I would rather... because... / I prefer...', v => onChange({ ...data, usefulLanguage: v }))));
+      wrap.appendChild(field('Przydatne zwroty', textArea(data.usefulLanguage || '', 'np. I would rather... because... / I prefer...', v => onChange(Object.assign(data, { usefulLanguage: v })))));
       return wrap;
     },
 
     ranking(data, onChange) {
       const wrap = el('div', { class: 'ab-editor-body' });
-      wrap.appendChild(field('Tytuł', textInput(data.title, 'Tytuł', v => onChange({ ...data, title: v }))));
-      wrap.appendChild(field('Instrukcja', textArea(data.instruction, 'Instrukcja do rankingu...', v => onChange({ ...data, instruction: v }))));
+      wrap.appendChild(field('Tytuł', textInput(data.title, 'Tytuł', v => onChange(Object.assign(data, { title: v })))));
+      wrap.appendChild(field('Instrukcja', textArea(data.instruction, 'Instrukcja do rankingu...', v => onChange(Object.assign(data, { instruction: v })))));
       wrap.appendChild(el('div', { class: 'ab-section-label' }, 'Elementy do uszeregowania'));
-      wrap.appendChild(stringList(data.items, 'Element...', v => onChange({ ...data, items: v }), 'Dodaj element'));
-      wrap.appendChild(field('Przydatne zwroty', textArea(data.usefulLanguage || '', 'np. I think the most important is... / I ranked ... first because...', v => onChange({ ...data, usefulLanguage: v }))));
+      wrap.appendChild(stringList(data.items, 'Element...', v => onChange(Object.assign(data, { items: v })), 'Dodaj element'));
+      wrap.appendChild(field('Przydatne zwroty', textArea(data.usefulLanguage || '', 'np. I think the most important is... / I ranked ... first because...', v => onChange(Object.assign(data, { usefulLanguage: v })))));
       return wrap;
     },
 
     debate(data, onChange) {
       const wrap = el('div', { class: 'ab-editor-body' });
-      wrap.appendChild(field('Tytuł', textInput(data.title, 'Tytuł', v => onChange({ ...data, title: v }))));
-      wrap.appendChild(field('Timer (sekundy)', numberInput(data.timer || 120, '120', v => onChange({ ...data, timer: v }))));
+      wrap.appendChild(field('Tytuł', textInput(data.title, 'Tytuł', v => onChange(Object.assign(data, { title: v })))));
+      wrap.appendChild(field('Timer (sekundy)', numberInput(data.timer || 120, '120', v => onChange(Object.assign(data, { timer: v })))));
       wrap.appendChild(el('div', { class: 'ab-section-label' }, 'Tezy debaty'));
-      wrap.appendChild(stringList(data.motions, 'Teza...', v => onChange({ ...data, motions: v }), 'Dodaj tezę'));
-      wrap.appendChild(field('Przydatne zwroty', textArea(data.usefulLanguage || '', 'np. I support the idea that... / My main argument is...', v => onChange({ ...data, usefulLanguage: v }))));
+      wrap.appendChild(stringList(data.motions, 'Teza...', v => onChange(Object.assign(data, { motions: v })), 'Dodaj tezę'));
+      wrap.appendChild(field('Przydatne zwroty', textArea(data.usefulLanguage || '', 'np. I support the idea that... / My main argument is...', v => onChange(Object.assign(data, { usefulLanguage: v })))));
       return wrap;
     },
 
     monologue(data, onChange) {
       const wrap = el('div', { class: 'ab-editor-body' });
-      wrap.appendChild(field('Tytuł', textInput(data.title, 'Tytuł', v => onChange({ ...data, title: v }))));
-      wrap.appendChild(field('Timer (sekundy)', numberInput(data.timer, '120', v => onChange({ ...data, timer: v }))));
+      wrap.appendChild(field('Tytuł', textInput(data.title, 'Tytuł', v => onChange(Object.assign(data, { title: v })))));
+      wrap.appendChild(field('Timer (sekundy)', numberInput(data.timer, '120', v => onChange(Object.assign(data, { timer: v })))));
       wrap.appendChild(el('div', { class: 'ab-section-label' }, 'Prompty'));
       const prompts = (data.prompts || []).map(p => typeof p === 'string' ? { text: p, tip: '' } : p);
       wrap.appendChild(dynamicList(
@@ -1207,16 +1203,16 @@ window.OWL = window.OWL || {};
           box.appendChild(btn('✕ Usuń', 'ab-btn-remove', remove));
           return box;
         },
-        v => onChange({ ...data, prompts: v }),
+        v => onChange(Object.assign(data, { prompts: v })),
         'Dodaj prompt'
       ));
-      wrap.appendChild(field('Przydatne zwroty', textArea(data.usefulLanguage || '', 'np. I usually... / First I... / Then...', v => onChange({ ...data, usefulLanguage: v }))));
+      wrap.appendChild(field('Przydatne zwroty', textArea(data.usefulLanguage || '', 'np. I usually... / First I... / Then...', v => onChange(Object.assign(data, { usefulLanguage: v })))));
       return wrap;
     },
 
     pairs(data, onChange) {
       const wrap = el('div', { class: 'ab-editor-body' });
-      wrap.appendChild(field('Tytuł', textInput(data.title, 'Tytuł', v => onChange({ ...data, title: v }))));
+      wrap.appendChild(field('Tytuł', textInput(data.title, 'Tytuł', v => onChange(Object.assign(data, { title: v })))));
       wrap.appendChild(el('div', { class: 'ab-section-label' }, 'Aktywności'));
       wrap.appendChild(dynamicList(
         data.activities || [],
@@ -1240,18 +1236,18 @@ window.OWL = window.OWL || {};
           box.appendChild(btn('✕ Usuń aktywność', 'ab-btn-remove', remove));
           return box;
         },
-        v => onChange({ ...data, activities: v }),
+        v => onChange(Object.assign(data, { activities: v })),
         'Dodaj aktywność'
       ));
-      wrap.appendChild(field('Przydatne zwroty', textArea(data.usefulLanguage || '', 'np. Can you help me? / I would like...', v => onChange({ ...data, usefulLanguage: v }))));
+      wrap.appendChild(field('Przydatne zwroty', textArea(data.usefulLanguage || '', 'np. Can you help me? / I would like...', v => onChange(Object.assign(data, { usefulLanguage: v })))));
       return wrap;
     },
 
     idiomtasks(data, onChange) {
       const wrap = el('div', { class: 'ab-editor-body' });
-      wrap.appendChild(field('Tytuł', textInput(data.title, 'Tytuł', v => onChange({ ...data, title: v }))));
+      wrap.appendChild(field('Tytuł', textInput(data.title, 'Tytuł', v => onChange(Object.assign(data, { title: v })))));
       wrap.appendChild(el('div', { class: 'ab-section-label' }, 'Idiomy'));
-      wrap.appendChild(stringList(data.idioms, 'Idiom...', v => onChange({ ...data, idioms: v }), 'Dodaj idiom'));
+      wrap.appendChild(stringList(data.idioms, 'Idiom...', v => onChange(Object.assign(data, { idioms: v })), 'Dodaj idiom'));
       wrap.appendChild(el('div', { class: 'ab-section-label' }, 'Zadania'));
       wrap.appendChild(dynamicList(
         data.tasks,
@@ -1261,7 +1257,7 @@ window.OWL = window.OWL || {};
           row.appendChild(btn('✕', 'ab-btn-remove', remove));
           return row;
         },
-        v => onChange({ ...data, tasks: v }),
+        v => onChange(Object.assign(data, { tasks: v })),
         'Dodaj zadanie'
       ));
       return wrap;
@@ -1269,26 +1265,26 @@ window.OWL = window.OWL || {};
 
     idiomstory(data, onChange) {
       const wrap = el('div', { class: 'ab-editor-body' });
-      wrap.appendChild(field('Tytuł', textInput(data.title, 'Tytuł', v => onChange({ ...data, title: v }))));
+      wrap.appendChild(field('Tytuł', textInput(data.title, 'Tytuł', v => onChange(Object.assign(data, { title: v })))));
       wrap.appendChild(el('div', { class: 'ab-section-label' }, 'Startery historii'));
-      wrap.appendChild(stringList(data.starters, 'Starter...', v => onChange({ ...data, starters: v }), 'Dodaj starter'));
+      wrap.appendChild(stringList(data.starters, 'Starter...', v => onChange(Object.assign(data, { starters: v })), 'Dodaj starter'));
       wrap.appendChild(el('div', { class: 'ab-section-label' }, 'Idiomy do użycia'));
-      wrap.appendChild(stringList(data.idioms, 'Idiom...', v => onChange({ ...data, idioms: v }), 'Dodaj idiom'));
+      wrap.appendChild(stringList(data.idioms, 'Idiom...', v => onChange(Object.assign(data, { idioms: v })), 'Dodaj idiom'));
       return wrap;
     },
 
     checklist(data, onChange) {
       const wrap = el('div', { class: 'ab-editor-body' });
-      wrap.appendChild(field('Tytuł', textInput(data.title, 'Tytuł listy', v => onChange({ ...data, title: v }))));
+      wrap.appendChild(field('Tytuł', textInput(data.title, 'Tytuł listy', v => onChange(Object.assign(data, { title: v })))));
       wrap.appendChild(el('div', { class: 'ab-section-label' }, 'Elementy listy'));
-      wrap.appendChild(stringList(data.items, 'Element...', v => onChange({ ...data, items: v }), 'Dodaj element'));
+      wrap.appendChild(stringList(data.items, 'Element...', v => onChange(Object.assign(data, { items: v })), 'Dodaj element'));
       return wrap;
     },
 
     'hw-write'(data, onChange) {
       const wrap = el('div', { class: 'ab-editor-body' });
-      wrap.appendChild(field('Tytuł', textInput(data.title, 'Tytuł zadania', v => onChange({ ...data, title: v }))));
-      wrap.appendChild(field('Polecenie/prompt', textArea(data.prompt, 'Treść polecenia dla ucznia...', v => onChange({ ...data, prompt: v }))));
+      wrap.appendChild(field('Tytuł', textInput(data.title, 'Tytuł zadania', v => onChange(Object.assign(data, { title: v })))));
+      wrap.appendChild(field('Polecenie/prompt', textArea(data.prompt, 'Treść polecenia dla ucznia...', v => onChange(Object.assign(data, { prompt: v })))));
       return wrap;
     }
 
