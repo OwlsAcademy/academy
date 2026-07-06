@@ -157,7 +157,7 @@ OWL.Blocks = (function () {
     if (d.title) c.appendChild(blockTitle(d.title));
     if (d.description) {
       const p = el('p', '', d.description);
-      p.style.cssText = 'margin-bottom:12px;color:var(--ink-60);font-size:.9rem;';
+      p.style.cssText = 'margin-bottom:12px;color:var(--ink-60);font-size:.9rem;white-space:pre-wrap;';
       c.appendChild(p);
     }
     const qs = d.questions || [];
@@ -286,12 +286,12 @@ OWL.Blocks = (function () {
     if (d.title) c.appendChild(blockTitle(d.title));
     if (d.text) {
       const p = el('p', '', d.text);
-      p.style.fontSize = '.95rem';
+      p.style.cssText = 'font-size:.95rem;white-space:pre-wrap;';
       c.appendChild(p);
     }
     if (d.tip) {
       const tip = el('p', '', '💡 ' + d.tip);
-      tip.style.cssText = 'font-size:.85rem;color:var(--ink-60);margin-top:8px;font-style:italic;';
+      tip.style.cssText = 'font-size:.85rem;color:var(--ink-60);margin-top:8px;font-style:italic;white-space:pre-wrap;';
       c.appendChild(tip);
     }
     return wrap(c);
