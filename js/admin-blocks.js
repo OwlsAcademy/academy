@@ -526,13 +526,15 @@ window.OWL = window.OWL || {};
 
       [0, 1].forEach(ci => {
         const col = data.columns[ci] || { header: '', items: [''] };
+        // Normalize items to strings (guard against objects from old data)
+        const colItems = (col.items || ['']).map(v => (v != null && typeof v === 'object') ? '' : String(v == null ? '' : v));
         wrap.appendChild(el('div', { class: 'ab-section-label' }, `Kolumna ${ci + 1}`));
         wrap.appendChild(field('Nagłówek kolumny', textInput(col.header, 'Nagłówek', v => {
           const newCols = data.columns.map((c, idx) => idx === ci ? { ...c, header: v } : c);
           onChange(Object.assign(data, { columns: newCols }));
         })));
         wrap.appendChild(stringList(
-          col.items,
+          colItems,
           'Element listy',
           v => {
             const newCols = data.columns.map((c, idx) => idx === ci ? { ...c, items: v } : c);

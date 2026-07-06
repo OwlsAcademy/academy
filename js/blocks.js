@@ -373,19 +373,16 @@ OWL.Blocks = (function () {
       (col.items || []).forEach(item => {
         const li = el('li', '');
         li.style.cssText = 'padding:5px 0;border-bottom:1px solid var(--border);font-size:.9rem;';
-        if (typeof item === 'string') {
+        if (item == null) {
+          // skip
+        } else if (typeof item === 'string') {
           li.textContent = item;
-        } else if (item && typeof item === 'object') {
-          // V1 format: {pl, en} — show English, with Polish as subtitle
-          if (item.en || item.pl) {
-            li.textContent = item.en || item.pl;
-            if (item.en && item.pl) {
-              const sub = el('div', '', item.pl);
-              sub.style.cssText = 'font-size:.78rem;color:var(--ink-60);margin-top:1px;';
-              li.appendChild(sub);
-            }
-          } else {
-            li.textContent = item.text || item.label || item.value || '';
+        } else if (typeof item === 'object') {
+          li.textContent = item.en || item.pl || item.text || item.label || item.value || '';
+          if (item.en && item.pl) {
+            const sub = el('div', '', item.pl);
+            sub.style.cssText = 'font-size:.78rem;color:var(--ink-60);margin-top:1px;';
+            li.appendChild(sub);
           }
         }
         ul.appendChild(li);
