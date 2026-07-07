@@ -2048,8 +2048,14 @@ OWL.Blocks = (function () {
       row.style.cssText = 'display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);font-size:.93rem;';
       const num = el('span', '', String(idx + 1) + '.');
       num.style.cssText = 'font-weight:700;color:var(--amber);min-width:24px;';
-      const txt = el('span', '', p);
-      txt.style.flex = '1';
+      const text = typeof p === 'string' ? p : (p.text || '');
+      const txt = el('span', '', text);
+      txt.style.cssText = 'flex:1;white-space:pre-wrap;';
+      if (typeof p === 'object' && p.tip) {
+        const tip = el('span', '', p.tip);
+        tip.style.cssText = 'display:block;font-size:.8rem;color:var(--ink-60);font-style:italic;margin-top:3px;';
+        txt.appendChild(tip);
+      }
       row.appendChild(num);
       row.appendChild(txt);
       c.appendChild(row);

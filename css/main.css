@@ -489,10 +489,10 @@ input:focus, textarea:focus, select:focus {
 }
 .vocab-item:hover { border-color: var(--amber); background: var(--amber-bg); transform: translateY(-2px); }
 .vocab-item .vi-emoji { font-size: 1.8rem; margin-bottom: 4px; display: block; }
-.vocab-item .vi-pl { font-weight: 700; font-size: .92rem; }
+.vocab-item .vi-pl { font-weight: 700; font-size: .92rem; display: block; }
 .vocab-item .vi-en { font-size: .78rem; color: var(--teal); margin-top: 4px; display: none; }
 .vocab-item .vi-hint { font-size: .75rem; color: var(--ink-60); font-style: italic; margin-top: 3px; display: none; }
-.vocab-item .vi-flip-hint { font-size: .68rem; color: var(--ink-30); margin-top: 4px; }
+.vocab-item .vi-flip-hint { font-size: .68rem; color: var(--ink-30); margin-top: 4px; display: block; }
 .vocab-item.revealed .vi-en { display: block; }
 .vocab-item.revealed .vi-hint { display: block; }
 .vocab-item.revealed .vi-flip-hint { display: none; }
