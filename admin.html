@@ -2706,6 +2706,13 @@ document.getElementById('adminLogoutBtn').addEventListener('click', async () => 
 });
 
 function showAdminApp(user) {
+  if ((user.app_metadata || {}).role !== 'admin') {
+    sb.auth.signOut();
+    const errEl = document.getElementById('loginAdminErr');
+    errEl.textContent = '❌ To konto nie ma uprawnień administratora.';
+    errEl.style.display = 'block';
+    return;
+  }
   document.getElementById('adminLoginScreen').style.display = 'none';
   document.getElementById('adminApp').style.display = 'flex';
   document.getElementById('adminEmailDisplay').textContent = user.email;
