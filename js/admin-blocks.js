@@ -332,7 +332,7 @@ window.OWL = window.OWL || {};
     'vocab-table': { title: '', color: 'green', items: [{ pl: '', en: '', image: '' }] },
     phrases: { title: '', items: [{ pl: '', en: '' }] },
     quiz: { title: '', instruction: '', questions: [{ q: '', options: ['', '', '', ''], answer: '', image: '', explanation: '' }] },
-    'single-choice': { title: '', question: '', options: ['', '', '', ''], answer: '', explanation: '' },
+    'single-choice': { title: '', question: '', items: [{ text: '', correct: false }, { text: '', correct: false }, { text: '', correct: false }, { text: '', correct: false }], explanation: '' },
     'multi-choice': { title: '', question: '', items: [{ text: '', correct: false }, { text: '', correct: false }, { text: '', correct: false }, { text: '', correct: false }], explanation: '' },
     gapfill: { title: '', instruction: '', wordbank: [''], items: [{ sentence: '', answer: '' }] },
     matching: { title: '', instruction: '', pairs: [{ word: '', def: '' }] },
@@ -343,7 +343,7 @@ window.OWL = window.OWL || {};
     ownsentences: { title: '', instruction: '', structures: [''] },
     collocations: { title: '', instruction: '', blocks: [{ keyword: '', instruction: '', options: [{ word: '', correct: false }], note: '' }] },
     wordform: { title: '', instruction: '', columns: ['Noun', 'Verb', 'Adjective', 'Adverb'], rows: [{ root: '', noun: { given: null, answer: '' }, verb: { given: null, answer: '' }, adj: { given: null, answer: '' }, adv: { given: null, answer: '' } }] },
-    tf: { title: '', instruction: '', items: [{ statement: '', answer: 'T', explanation: '' }] },
+    tf: { title: '', instruction: '', mode: 'tf', items: [{ statement: '', answer: 'T', explanation: '' }] },
     jumble: { title: '', instruction: '', items: [{ sentence: '' }] },
     vic: { title: '', instruction: '', items: [{ word: '', sentence: '', options: ['', '', '', ''], answer: '', explanation: '' }] },
     openq: { title: '', instruction: '', questions: [{ question: '', hint: '' }] },
@@ -674,9 +674,31 @@ window.OWL = window.OWL || {};
       const wrap = el('div', { class: 'ab-editor-body' });
       wrap.appendChild(field('Tytuł', textInput(data.title, 'Tytuł (opcjonalny)', v => onChange(Object.assign(data, { title: v })))));
       wrap.appendChild(field('Pytanie', textArea(data.question, 'Treść pytania...', v => onChange(Object.assign(data, { question: v })))));
-      wrap.appendChild(el('div', { class: 'ab-section-label' }, 'Opcje odpowiedzi'));
-      wrap.appendChild(stringList(data.options, 'Opcja...', v => onChange(Object.assign(data, { options: v })), 'Dodaj opcję'));
-      wrap.appendChild(field('Poprawna odpowiedź', textInput(data.answer, 'Wpisz dokładną treść poprawnej opcji', v => onChange(Object.assign(data, { answer: v })))));
+      wrap.appendChild(el('div', { class: 'ab-section-label' }, 'Opcje (zaznacz poprawną)'));
+      const groupName = 'sc-' + Math.random().toString(36).slice(2, 7);
+      wrap.appendChild(dynamicList(
+        data.items,
+        (item, i, update, remove) => {
+          const row = el('div', { class: 'ab-pair-row' });
+          const radio = document.createElement('input');
+          radio.type = 'radio';
+          radio.name = groupName;
+          radio.checked = !!item.correct;
+          radio.title = 'Poprawna odpowiedź';
+          radio.style.cssText = 'width:16px;height:16px;flex-shrink:0;accent-color:var(--teal);cursor:pointer;';
+          radio.addEventListener('change', () => {
+            if (!radio.checked) return;
+            const newItems = data.items.map((it, j) => ({ ...it, correct: j === i }));
+            onChange(Object.assign(data, { items: newItems }));
+          });
+          row.appendChild(radio);
+          row.appendChild(textInput(item.text, 'Treść opcji...', v => update({ ...item, text: v })));
+          row.appendChild(btn('✕', 'ab-btn-remove', remove));
+          return row;
+        },
+        v => onChange(Object.assign(data, { items: v })),
+        'Dodaj opcję'
+      ));
       wrap.appendChild(field('Wyjaśnienie', textInput(data.explanation, 'Opcjonalne wyjaśnienie po odpowiedzi', v => onChange(Object.assign(data, { explanation: v })))));
       return wrap;
     },
@@ -932,17 +954,20 @@ window.OWL = window.OWL || {};
       const wrap = el('div', { class: 'ab-editor-body' });
       wrap.appendChild(field('Tytuł', textInput(data.title, 'Tytuł', v => onChange(Object.assign(data, { title: v })))));
       wrap.appendChild(field('Instrukcja', textArea(data.instruction, 'Instrukcja...', v => onChange(Object.assign(data, { instruction: v })))));
+      wrap.appendChild(field('Tryb', selectInput(data.mode || 'tf', [
+        { value: 'tf', label: 'Prawda / Fałsz' },
+        { value: 'tfn', label: 'Prawda / Fałsz / Nie podano' }
+      ], v => onChange(Object.assign(data, { mode: v })))));
+      const answerOpts = (data.mode || 'tf') === 'tfn'
+        ? [{ value: 'T', label: 'True (Prawda)' }, { value: 'F', label: 'False (Fałsz)' }, { value: 'N', label: 'Not Given (Nie podano)' }]
+        : [{ value: 'T', label: 'True (Prawda)' }, { value: 'F', label: 'False (Fałsz)' }];
       wrap.appendChild(el('div', { class: 'ab-section-label' }, 'Zdania'));
       wrap.appendChild(dynamicList(
         data.items,
         (item, i, update, remove) => {
           const box = el('div', { class: 'ab-tf-item' });
           box.appendChild(field('Zdanie', textInput(item.statement, 'Zdanie twierdzące...', v => update({ ...item, statement: v }))));
-          box.appendChild(field('Odpowiedź', selectInput(item.answer, [
-            { value: 'T', label: 'True (Prawda)' },
-            { value: 'F', label: 'False (Fałsz)' },
-            { value: 'N', label: 'Not Given (Nie podano)' }
-          ], v => update({ ...item, answer: v }))));
+          box.appendChild(field('Odpowiedź', selectInput(item.answer, answerOpts, v => update({ ...item, answer: v }))));
           box.appendChild(field('Wyjaśnienie', textInput(item.explanation, 'Opcjonalne wyjaśnienie', v => update({ ...item, explanation: v }))));
           box.appendChild(btn('✕ Usuń', 'ab-btn-remove', remove));
           return box;

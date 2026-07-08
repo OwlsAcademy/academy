@@ -644,22 +644,25 @@ OWL.Blocks = (function () {
 
     const saved = OWL.Progress ? (OWL.Progress.getBlock(block.id) || {}) : {};
     const wasAnswered = saved.answered;
-    const savedAnswer = saved.answer;
+    const savedIndex = saved.answerIndex;
 
     const qText = el('p', '', d.question || '');
     qText.style.cssText = 'font-weight:600;margin-bottom:12px;font-size:.95rem;';
     c.appendChild(qText);
 
+    // backward compat: old structure used options+answer strings
+    const items = d.items || (d.options || []).map(opt => ({ text: opt, correct: opt === d.answer }));
+
     const optBtns = [];
     const expDiv = el('div', '');
     expDiv.style.cssText = 'font-size:.82rem;color:var(--ink-60);margin-top:8px;font-style:italic;display:none;';
 
-    function applyAnswer(selected) {
-      optBtns.forEach(b => {
+    function applyAnswer(selectedIdx) {
+      optBtns.forEach((b, idx) => {
         b.disabled = true;
         b.classList.remove('correct', 'incorrect');
-        if (b.textContent === d.answer) b.classList.add('correct');
-        else if (b.textContent === selected) b.classList.add('incorrect');
+        if (items[idx] && items[idx].correct) b.classList.add('correct');
+        else if (idx === selectedIdx) b.classList.add('incorrect');
       });
       if (d.explanation) {
         expDiv.textContent = d.explanation;
@@ -667,19 +670,19 @@ OWL.Blocks = (function () {
       }
     }
 
-    (d.options || []).forEach(opt => {
-      const b = el('button', 'quiz-option', opt);
+    items.forEach((item, idx) => {
+      const b = el('button', 'quiz-option', item.text || '');
       optBtns.push(b);
       b.addEventListener('click', () => {
         if (b.disabled) return;
-        applyAnswer(opt);
-        if (OWL.Progress) OWL.Progress.setBlock(block.id, { answered: true, answer: opt, score: opt === d.answer ? 1 : 0 });
+        applyAnswer(idx);
+        if (OWL.Progress) OWL.Progress.setBlock(block.id, { answered: true, answerIndex: idx, score: items[idx] && items[idx].correct ? 1 : 0 });
       });
       c.appendChild(b);
     });
     c.appendChild(expDiv);
 
-    if (wasAnswered) applyAnswer(savedAnswer);
+    if (wasAnswered && savedIndex !== undefined) applyAnswer(savedIndex);
     return wrap(c);
   }
 
@@ -1290,10 +1293,11 @@ OWL.Blocks = (function () {
       div.appendChild(stmt);
 
       const btnsWrap = el('div', 'tf-btns');
-      const opts2 = ['T', 'F', 'N'];
-      const labels = { T: 'True', F: 'False', N: 'Not Mentioned' };
+      // d.mode 'tf' = True/False only; 'tfn' = True/False/Not Given; legacy blocks without mode default to tfn
+      const choices = (d.mode || 'tfn') === 'tf' ? ['T', 'F'] : ['T', 'F', 'N'];
+      const labels = { T: 'Prawda', F: 'Fałsz', N: 'Nie podano' };
       const tfBtns = [];
-      opts2.forEach(opt => {
+      choices.forEach(opt => {
         const b = el('button', 'tf-btn', labels[opt]);
         b.dataset.val = opt;
         if (savedA[idx] === opt) {
