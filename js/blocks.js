@@ -1305,7 +1305,6 @@ OWL.Blocks = (function () {
           b.classList.add(opt === item.answer ? 'correct' : 'incorrect');
         }
         b.addEventListener('click', () => {
-          if (b.classList.contains('correct') || b.classList.contains('incorrect')) return;
           tfBtns.forEach(x => x.classList.remove('selected', 'correct', 'incorrect'));
           b.classList.add('selected');
           const correct = opt === item.answer;
@@ -1316,9 +1315,9 @@ OWL.Blocks = (function () {
           }
           savedA[idx] = opt;
           if (OWL.Progress) OWL.Progress.setBlock(block.id, { answers: savedA });
-          if (item.explanation && correct) {
+          if (item.explanation) {
             const exp = div.querySelector('.tf-exp');
-            if (exp) exp.style.display = 'block';
+            if (exp) exp.style.display = correct ? 'block' : 'none';
           }
         });
         tfBtns.push(b);
