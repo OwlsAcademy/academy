@@ -760,7 +760,7 @@ OWL.Blocks = (function () {
 
     // Wordbank — handle both array and comma-separated string (V1 legacy)
     const wbWords = Array.isArray(d.wordbank)
-      ? d.wordbank
+      ? d.wordbank.filter(w => w && w.trim())
       : (d.wordbank ? String(d.wordbank).split(/[,·]+/).map(w => w.trim()).filter(Boolean) : []);
     if (wbWords.length) {
       const wb = el('div', '');
@@ -1832,8 +1832,22 @@ OWL.Blocks = (function () {
     navRow.appendChild(prevBtn);
     navRow.appendChild(nextBtn);
 
+    const shuffleBtn = el('button', 'fc-dir-btn', '🔀 Przetasuj');
+    shuffleBtn.addEventListener('click', () => {
+      for (let i = orderedItems.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [orderedItems[i], orderedItems[j]] = [orderedItems[j], orderedItems[i]];
+      }
+      currentIdx = 0;
+      scene.style.display = '';
+      doneScreen.style.display = 'none';
+      srsLabel.style.display = '';
+      updateCard();
+    });
+
     c.appendChild(counterEl);
     c.appendChild(dirBtn);
+    c.appendChild(shuffleBtn);
     c.appendChild(progressBar);
     c.appendChild(srsLabel);
     c.appendChild(scene);

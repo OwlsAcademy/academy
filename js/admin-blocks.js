@@ -173,6 +173,43 @@ window.OWL = window.OWL || {};
     return cols;
   }
 
+  // CSV import row: section label + file picker; parser(cols[]) → item object or null
+  function makeCsvImport(sectionLabel, hint, parser, list) {
+    const row = el('div', { class: 'ab-section-row' });
+    if (sectionLabel) row.appendChild(el('div', { class: 'ab-section-label' }, sectionLabel));
+    const fileInput = document.createElement('input');
+    fileInput.type = 'file';
+    fileInput.accept = '.csv,text/csv';
+    fileInput.style.display = 'none';
+    const status = el('span', { class: 'ab-csv-hint' }, hint);
+    const importBtn = btn('⬆ Importuj CSV', 'ab-btn-secondary', () => fileInput.click());
+    fileInput.addEventListener('change', () => {
+      const file = fileInput.files && fileInput.files[0];
+      if (!file) return;
+      status.textContent = '⏳ Wczytywanie...';
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const text = e.target.result;
+        const lines = text.split(/\r?\n/).filter(l => l.trim());
+        if (lines.length < 2) { status.textContent = 'Brak danych (tylko nagłówek?).'; return; }
+        const sep = (lines[0].split(';').length > lines[0].split(',').length) ? ';' : ',';
+        const imported = lines.slice(1)
+          .map(line => parser(parseCSVLine(line, sep).map(c => c.trim())))
+          .filter(Boolean);
+        fileInput.value = '';
+        if (!imported.length) { status.textContent = 'Brak danych po nagłówku.'; return; }
+        list.appendItems(imported);
+        status.textContent = `✓ Dodano ${imported.length} pozycji`;
+        setTimeout(() => { status.textContent = hint; }, 3000);
+      };
+      reader.readAsText(file, 'UTF-8');
+    });
+    row.appendChild(importBtn);
+    row.appendChild(status);
+    row.appendChild(fileInput);
+    return row;
+  }
+
   // Simple string list (each item is a string)
   function stringList(items, placeholder, onListChange, addLabel) {
     let current = items ? [...items] : [''];
@@ -399,24 +436,23 @@ window.OWL = window.OWL || {};
 
     glossary(data, onChange) {
       const wrap = el('div', { class: 'ab-editor-body' });
-      wrap.appendChild(el('div', { class: 'ab-section-label' }, 'Pozycje słowniczka'));
       const list = dynamicList(
         data.items,
         (item, i, update, remove) => {
           const box = el('div', { class: 'ab-glossary-item' });
-          box.appendChild(field('Słowo', textInput(item.word, 'Słowo', v => update({ ...item, word: v }))));
-          box.appendChild(field('Fonetyka', textInput(item.phonetic, '/fəˈnɛtɪk/', v => update({ ...item, phonetic: v }))));
-          box.appendChild(field('Tłumaczenie', textInput(item.translation, 'Tłumaczenie', v => update({ ...item, translation: v }))));
-          box.appendChild(field('Wskazówka', textInput(item.hint, 'Wskazówka/kategoria', v => update({ ...item, hint: v }))));
-          box.appendChild(field('Przykład', textInput(item.example, 'Przykładowe zdanie', v => update({ ...item, example: v }))));
+          const state = { word: item.word||'', phonetic: item.phonetic||'', translation: item.translation||'', hint: item.hint||'', example: item.example||'' };
+          box.appendChild(field('Słowo', textInput(state.word, 'Słowo', v => { state.word = v; update({ ...state }); })));
+          box.appendChild(field('Fonetyka', textInput(state.phonetic, '/fəˈnɛtɪk/', v => { state.phonetic = v; update({ ...state }); })));
+          box.appendChild(field('Tłumaczenie', textInput(state.translation, 'Tłumaczenie', v => { state.translation = v; update({ ...state }); })));
+          box.appendChild(field('Wskazówka', textInput(state.hint, 'Wskazówka/kategoria', v => { state.hint = v; update({ ...state }); })));
+          box.appendChild(field('Przykład', textInput(state.example, 'Przykładowe zdanie', v => { state.example = v; update({ ...state }); })));
           box.appendChild(btn('✕ Usuń', 'ab-btn-remove', remove));
           return box;
         },
         v => onChange(Object.assign(data, { items: v })),
         'Dodaj słowo'
       );
-      // Fix default item for add
-      list.querySelector('.ab-btn-add').addEventListener('click', () => {}, false);
+      wrap.appendChild(makeCsvImport('Pozycje słowniczka', 'słowo; fonetyka; tłumaczenie; wskazówka; przykład (1. wiersz = nagłówek)', cols => cols[0] ? { word: cols[0], phonetic: cols[1]||'', translation: cols[2]||'', hint: cols[3]||'', example: cols[4]||'' } : null, list));
       wrap.appendChild(list);
       return wrap;
     },
@@ -507,19 +543,21 @@ window.OWL = window.OWL || {};
     examples(data, onChange) {
       const wrap = el('div', { class: 'ab-editor-body' });
       wrap.appendChild(field('Tytuł', textInput(data.title, 'Tytuł sekcji', v => onChange(Object.assign(data, { title: v })))));
-      wrap.appendChild(el('div', { class: 'ab-section-label' }, 'Przykłady'));
-      wrap.appendChild(dynamicList(
+      const list = dynamicList(
         data.items,
         (item, i, update, remove) => {
           const row = el('div', { class: 'ab-pair-row' });
-          row.appendChild(textInput(item.pl, 'Polski', v => update({ ...item, pl: v })));
-          row.appendChild(textInput(item.en, 'Angielski', v => update({ ...item, en: v })));
+          const state = { pl: item.pl||'', en: item.en||'' };
+          row.appendChild(textInput(state.pl, 'Polski', v => { state.pl = v; update({ ...state }); }));
+          row.appendChild(textInput(state.en, 'Angielski', v => { state.en = v; update({ ...state }); }));
           row.appendChild(btn('✕', 'ab-btn-remove', remove));
           return row;
         },
         v => onChange(Object.assign(data, { items: v })),
         'Dodaj przykład'
-      ));
+      );
+      wrap.appendChild(makeCsvImport('Przykłady', 'wersja PL; wersja EN (1. wiersz = nagłówek)', cols => cols[0] ? { pl: cols[0], en: cols[1]||'' } : null, list));
+      wrap.appendChild(list);
       return wrap;
     },
 
@@ -583,21 +621,23 @@ window.OWL = window.OWL || {};
       const wrap = el('div', { class: 'ab-editor-body' });
       wrap.appendChild(field('Tytuł', textInput(data.title, 'Tytuł', v => onChange(Object.assign(data, { title: v })))));
       wrap.appendChild(field('Kolor', selectInput(data.color, COLOR_OPTIONS, v => onChange(Object.assign(data, { color: v })))));
-      wrap.appendChild(el('div', { class: 'ab-section-label' }, 'Słówka'));
-      wrap.appendChild(dynamicList(
+      const list = dynamicList(
         data.items,
         (item, i, update, remove) => {
           const box = el('div', { class: 'ab-vocab-item' });
-          box.appendChild(field('Emoji', textInput(item.emoji, '📚', v => update({ ...item, emoji: v }))));
-          box.appendChild(field('Polski', textInput(item.pl, 'Słowo PL', v => update({ ...item, pl: v }))));
-          box.appendChild(field('Angielski', textInput(item.en, 'Słowo EN', v => update({ ...item, en: v }))));
-          box.appendChild(imageField(item.image, v => update({ ...item, image: v })));
+          const state = { emoji: item.emoji||'', pl: item.pl||'', en: item.en||'', image: item.image||'' };
+          box.appendChild(field('Emoji', textInput(state.emoji, '📚', v => { state.emoji = v; update({ ...state }); })));
+          box.appendChild(field('Polski', textInput(state.pl, 'Słowo PL', v => { state.pl = v; update({ ...state }); })));
+          box.appendChild(field('Angielski', textInput(state.en, 'Słowo EN', v => { state.en = v; update({ ...state }); })));
+          box.appendChild(imageField(state.image, v => { state.image = v; update({ ...state }); }));
           box.appendChild(btn('✕ Usuń', 'ab-btn-remove', remove));
           return box;
         },
         v => onChange(Object.assign(data, { items: v })),
         'Dodaj słówko'
-      ));
+      );
+      wrap.appendChild(makeCsvImport('Słówka', 'emoji; PL; EN (1. wiersz = nagłówek)', cols => (cols[1]||cols[2]) ? { emoji: cols[0]||'', pl: cols[1]||'', en: cols[2]||'', image: '' } : null, list));
+      wrap.appendChild(list);
       return wrap;
     },
 
@@ -605,39 +645,43 @@ window.OWL = window.OWL || {};
       const wrap = el('div', { class: 'ab-editor-body' });
       wrap.appendChild(field('Tytuł', textInput(data.title, 'Tytuł', v => onChange(Object.assign(data, { title: v })))));
       wrap.appendChild(field('Kolor', selectInput(data.color, COLOR_OPTIONS, v => onChange(Object.assign(data, { color: v })))));
-      wrap.appendChild(el('div', { class: 'ab-section-label' }, 'Słówka'));
-      wrap.appendChild(dynamicList(
+      const list = dynamicList(
         data.items,
         (item, i, update, remove) => {
           const box = el('div', { class: 'ab-vocab-item' });
-          box.appendChild(field('Polski', textInput(item.pl, 'Słowo PL', v => update({ ...item, pl: v }))));
-          box.appendChild(field('Angielski', textInput(item.en, 'Słowo EN', v => update({ ...item, en: v }))));
-          box.appendChild(imageField(item.image, v => update({ ...item, image: v })));
+          const state = { pl: item.pl||'', en: item.en||'', image: item.image||'' };
+          box.appendChild(field('Polski', textInput(state.pl, 'Słowo PL', v => { state.pl = v; update({ ...state }); })));
+          box.appendChild(field('Angielski', textInput(state.en, 'Słowo EN', v => { state.en = v; update({ ...state }); })));
+          box.appendChild(imageField(state.image, v => { state.image = v; update({ ...state }); }));
           box.appendChild(btn('✕ Usuń', 'ab-btn-remove', remove));
           return box;
         },
         v => onChange(Object.assign(data, { items: v })),
         'Dodaj słówko'
-      ));
+      );
+      wrap.appendChild(makeCsvImport('Słówka', 'PL; EN (1. wiersz = nagłówek)', cols => cols[0] ? { pl: cols[0], en: cols[1]||'', image: '' } : null, list));
+      wrap.appendChild(list);
       return wrap;
     },
 
     phrases(data, onChange) {
       const wrap = el('div', { class: 'ab-editor-body' });
       wrap.appendChild(field('Tytuł', textInput(data.title, 'Tytuł sekcji', v => onChange(Object.assign(data, { title: v })))));
-      wrap.appendChild(el('div', { class: 'ab-section-label' }, 'Zwroty'));
-      wrap.appendChild(dynamicList(
+      const list = dynamicList(
         data.items,
         (item, i, update, remove) => {
           const row = el('div', { class: 'ab-pair-row' });
-          row.appendChild(textInput(item.pl, 'Polski', v => update({ ...item, pl: v })));
-          row.appendChild(textInput(item.en, 'Angielski', v => update({ ...item, en: v })));
+          const state = { pl: item.pl||'', en: item.en||'' };
+          row.appendChild(textInput(state.pl, 'Polski', v => { state.pl = v; update({ ...state }); }));
+          row.appendChild(textInput(state.en, 'Angielski', v => { state.en = v; update({ ...state }); }));
           row.appendChild(btn('✕', 'ab-btn-remove', remove));
           return row;
         },
         v => onChange(Object.assign(data, { items: v })),
         'Dodaj zwrot'
-      ));
+      );
+      wrap.appendChild(makeCsvImport('Zwroty', 'wersja PL; wersja EN (1. wiersz = nagłówek)', cols => cols[0] ? { pl: cols[0], en: cols[1]||'' } : null, list));
+      wrap.appendChild(list);
       return wrap;
     },
 
@@ -738,8 +782,9 @@ window.OWL = window.OWL || {};
         data.items,
         (item, i, update, remove) => {
           const box = el('div', { class: 'ab-gapfill-item' });
-          box.appendChild(field('Zdanie (z ___ w miejscu luki)', textInput(item.sentence, 'She ___ to school every day.', v => update({ ...item, sentence: v }))));
-          box.appendChild(field('Odpowiedź', textInput(item.answer, 'Poprawna odpowiedź', v => update({ ...item, answer: v }))));
+          const state = { sentence: item.sentence || '', answer: item.answer || '' };
+          box.appendChild(field('Zdanie (z ___ w miejscu luki)', textInput(state.sentence, 'She ___ to school every day.', v => { state.sentence = v; update({ ...state }); })));
+          box.appendChild(field('Odpowiedź', textInput(state.answer, 'Poprawna odpowiedź', v => { state.answer = v; update({ ...state }); })));
           box.appendChild(btn('✕ Usuń', 'ab-btn-remove', remove));
           return box;
         },
