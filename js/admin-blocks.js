@@ -332,6 +332,7 @@ window.OWL = window.OWL || {};
     image: 'Obraz',
     audio: 'Audio',
     video: 'Wideo',
+    pdf: 'PDF',
     html: 'HTML',
     info: 'Info/Alert',
     table: 'Tabela',
@@ -386,6 +387,7 @@ window.OWL = window.OWL || {};
     image: { image: '', caption: '' },
     audio: { title: '', url: '', caption: '' },
     video: { title: '', url: '', caption: '' },
+    pdf: { title: '', url: '', caption: '' },
     html: { html: '' },
     info: { title: '', text: '', tip: '', color: 'green' },
     table: { title: '', headers: ['', ''], rows: [['', '']] },
@@ -506,6 +508,14 @@ window.OWL = window.OWL || {};
       wrap.appendChild(field('Tytuł', textInput(data.title, 'Tytuł (opcjonalny)', v => onChange(Object.assign(data, { title: v })))));
       wrap.appendChild(field('URL wideo / YouTube', textInput(data.url, 'https://youtu.be/... lub https://... (.mp4)', v => onChange(Object.assign(data, { url: v })))));
       wrap.appendChild(field('Podpis', textInput(data.caption, 'Podpis lub opis wideo', v => onChange(Object.assign(data, { caption: v })))));
+      return wrap;
+    },
+
+    pdf(data, onChange) {
+      const wrap = el('div', { class: 'ab-editor-body' });
+      wrap.appendChild(field('Tytuł', textInput(data.title, 'Tytuł (opcjonalny)', v => onChange(Object.assign(data, { title: v })))));
+      wrap.appendChild(field('URL pliku PDF', textInput(data.url, 'https://... (.pdf)', v => onChange(Object.assign(data, { url: v })))));
+      wrap.appendChild(field('Podpis', textInput(data.caption, 'Podpis lub opis', v => onChange(Object.assign(data, { caption: v })))));
       return wrap;
     },
 
@@ -1450,7 +1460,7 @@ window.OWL = window.OWL || {};
   const BLOCK_CATEGORIES = [
     {
       label: 'Wyświetlanie',
-      types: ['quote', 'discussion', 'article', 'glossary', 'image', 'audio', 'video', 'html', 'info', 'table', 'examples', 'two-col', 'cta', 'comprehension']
+      types: ['quote', 'discussion', 'article', 'glossary', 'image', 'audio', 'video', 'pdf', 'html', 'info', 'table', 'examples', 'two-col', 'cta', 'comprehension']
     },
     {
       label: 'Słownictwo',

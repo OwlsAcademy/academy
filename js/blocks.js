@@ -333,6 +333,38 @@ OWL.Blocks = (function () {
     return wrap(c);
   }
 
+  function renderPdf(block, opts) {
+    const d = block.data;
+    const c = card();
+    if (d.title) c.appendChild(blockTitle(d.title));
+    if (d.url) {
+      const iframe = document.createElement('iframe');
+      iframe.src = d.url;
+      iframe.title = d.title || 'PDF';
+      iframe.style.cssText = 'width:100%;height:680px;border:none;border-radius:10px;display:block;margin:8px 0;';
+      c.appendChild(iframe);
+      const linkRow = el('p', '');
+      linkRow.style.cssText = 'font-size:.82rem;color:var(--ink-60);margin-top:4px;';
+      const a = document.createElement('a');
+      a.href = d.url;
+      a.target = '_blank';
+      a.rel = 'noopener';
+      a.textContent = '↓ Otwórz PDF w nowej karcie';
+      linkRow.appendChild(a);
+      c.appendChild(linkRow);
+    } else {
+      const ph = el('p', '', 'Brak URL pliku PDF.');
+      ph.style.cssText = 'color:var(--ink-30);font-style:italic;font-size:.88rem;';
+      c.appendChild(ph);
+    }
+    if (d.caption) {
+      const cap = el('p', '', d.caption);
+      cap.style.cssText = 'font-size:.82rem;color:var(--ink-60);margin-top:4px;';
+      c.appendChild(cap);
+    }
+    return wrap(c);
+  }
+
   function renderHtml(block, opts) {
     const d = block.data;
     const div = el('div', 'block-wrap');
@@ -2465,6 +2497,7 @@ OWL.Blocks = (function () {
         case 'image':          return renderImage(block, opts);
         case 'audio':          return renderAudio(block, opts);
         case 'video':          return renderVideo(block, opts);
+        case 'pdf':            return renderPdf(block, opts);
         case 'html':           return renderHtml(block, opts);
         case 'info':           return renderInfo(block, opts);
         case 'table':          return renderTable(block, opts);
