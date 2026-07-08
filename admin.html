@@ -733,7 +733,13 @@ function renderBlockList(tab, container) {
         tab.blocks[bi] = updatedBlock;
       },
       () => {
-        // Delete
+        // Delete — remove Supabase Storage file if URL points to our media bucket
+        const blockUrl = (block.data && block.data.url) || '';
+        const mediaPrefix = SUPABASE_URL + '/storage/v1/object/public/media/';
+        if (blockUrl.startsWith(mediaPrefix)) {
+          const filePath = blockUrl.slice(mediaPrefix.length).split('?')[0];
+          sb.storage.from('media').remove([filePath]).catch(e => console.warn('[OWL] Storage delete failed:', e));
+        }
         tab.blocks.splice(bi, 1);
         renderBlockList(tab, container);
       }
