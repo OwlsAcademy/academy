@@ -337,16 +337,17 @@ OWL.Blocks = (function () {
     const d = block.data;
     const c = card();
     if (d.title) c.appendChild(blockTitle(d.title));
-    if (d.url) {
+    const safeUrl = /^https?:\/\//i.test(d.url) ? d.url : '';
+    if (safeUrl) {
       const iframe = document.createElement('iframe');
-      iframe.src = d.url;
+      iframe.src = safeUrl;
       iframe.title = d.title || 'PDF';
       iframe.style.cssText = 'width:100%;height:680px;border:none;border-radius:10px;display:block;margin:8px 0;';
       c.appendChild(iframe);
       const linkRow = el('p', '');
       linkRow.style.cssText = 'font-size:.82rem;color:var(--ink-60);margin-top:4px;';
       const a = document.createElement('a');
-      a.href = d.url;
+      a.href = safeUrl;
       a.target = '_blank';
       a.rel = 'noopener';
       a.textContent = '↓ Otwórz PDF w nowej karcie';
