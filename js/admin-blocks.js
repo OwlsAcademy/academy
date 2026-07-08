@@ -45,6 +45,39 @@ window.OWL = window.OWL || {};
     return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
   }
 
+  async function uploadToStorage(file, folder, onStatus) {
+    onStatus('⏳ Wysyłanie...');
+    const ext = file.name.split('.').pop().toLowerCase();
+    const path = folder + '/' + Date.now() + '_' + Math.random().toString(36).slice(2, 7) + '.' + ext;
+    const { data: up, error } = await sb.storage.from('media').upload(path, file, { contentType: file.type, upsert: false });
+    if (error) { onStatus('✗ ' + error.message); return null; }
+    const { data: { publicUrl } } = sb.storage.from('media').getPublicUrl(up.path);
+    return publicUrl;
+  }
+
+  // URL text input + "Upload file" button combined; onChange called with the URL string
+  function mediaUrlField(accept, folder, val, onChange) {
+    const wrap = el('div', { class: 'ab-media-upload' });
+    const inp = el('input', { class: 'ab-input', type: 'text', value: val || '', placeholder: 'https://...' });
+    inp.style.flex = '1';
+    inp.addEventListener('input', () => onChange(inp.value));
+    const status = el('span', { class: 'ab-csv-hint' }, '');
+    const uploadBtn = btn('⬆ Prześlij plik', 'ab-btn-secondary', () => {
+      const fi = document.createElement('input');
+      fi.type = 'file'; fi.accept = accept;
+      fi.addEventListener('change', async () => {
+        const file = fi.files && fi.files[0]; if (!file) return;
+        const url = await uploadToStorage(file, folder, t => { status.textContent = t; });
+        if (url) { inp.value = url; onChange(url); status.textContent = '✓ Przesłano'; setTimeout(() => { status.textContent = ''; }, 3000); }
+      });
+      fi.click();
+    });
+    const row = el('div', { class: 'ab-section-row' });
+    row.appendChild(inp); row.appendChild(uploadBtn); row.appendChild(status);
+    wrap.appendChild(row);
+    return wrap;
+  }
+
   // Build a label+control row
   function field(label, control) {
     const wrap = el('div', { class: 'ab-field' });
@@ -498,7 +531,7 @@ window.OWL = window.OWL || {};
     audio(data, onChange) {
       const wrap = el('div', { class: 'ab-editor-body' });
       wrap.appendChild(field('Tytuł', textInput(data.title, 'Tytuł (opcjonalny)', v => onChange(Object.assign(data, { title: v })))));
-      wrap.appendChild(field('URL pliku audio', textInput(data.url, 'https://... (.mp3, .ogg, .wav)', v => onChange(Object.assign(data, { url: v })))));
+      wrap.appendChild(field('Plik audio (.mp3 / .ogg / .wav)', mediaUrlField('audio/*', 'audio', data.url, v => onChange(Object.assign(data, { url: v })))));
       wrap.appendChild(field('Podpis', textInput(data.caption, 'Podpis lub opis nagrania', v => onChange(Object.assign(data, { caption: v })))));
       return wrap;
     },
@@ -506,7 +539,7 @@ window.OWL = window.OWL || {};
     video(data, onChange) {
       const wrap = el('div', { class: 'ab-editor-body' });
       wrap.appendChild(field('Tytuł', textInput(data.title, 'Tytuł (opcjonalny)', v => onChange(Object.assign(data, { title: v })))));
-      wrap.appendChild(field('URL wideo / YouTube', textInput(data.url, 'https://youtu.be/... lub https://... (.mp4)', v => onChange(Object.assign(data, { url: v })))));
+      wrap.appendChild(field('Plik wideo lub YouTube URL', mediaUrlField('video/*', 'video', data.url, v => onChange(Object.assign(data, { url: v })))));
       wrap.appendChild(field('Podpis', textInput(data.caption, 'Podpis lub opis wideo', v => onChange(Object.assign(data, { caption: v })))));
       return wrap;
     },
@@ -514,7 +547,7 @@ window.OWL = window.OWL || {};
     pdf(data, onChange) {
       const wrap = el('div', { class: 'ab-editor-body' });
       wrap.appendChild(field('Tytuł', textInput(data.title, 'Tytuł (opcjonalny)', v => onChange(Object.assign(data, { title: v })))));
-      wrap.appendChild(field('URL pliku PDF', textInput(data.url, 'https://... (.pdf)', v => onChange(Object.assign(data, { url: v })))));
+      wrap.appendChild(field('Plik PDF', mediaUrlField('application/pdf,.pdf', 'pdf', data.url, v => onChange(Object.assign(data, { url: v })))));
       wrap.appendChild(field('Podpis', textInput(data.caption, 'Podpis lub opis', v => onChange(Object.assign(data, { caption: v })))));
       return wrap;
     },
