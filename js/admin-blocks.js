@@ -173,8 +173,24 @@ window.OWL = window.OWL || {};
     return cols;
   }
 
-  // CSV import row: section label + file picker; parser(cols[]) → item object or null
-  function makeCsvImport(sectionLabel, hint, parser, list) {
+  function exportToCsv(filename, headers, rows) {
+    const esc = v => {
+      const s = String(v == null ? '' : v);
+      return (s.includes(';') || s.includes('"') || s.includes('\n')) ? '"' + s.replace(/"/g, '""') + '"' : s;
+    };
+    const lines = [headers.map(esc).join(';'), ...rows.map(r => r.map(esc).join(';'))];
+    const blob = new Blob(['﻿' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8;' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  }
+
+  // CSV import+export row; pass exportHeaders/exportMapper/getData to add an export button
+  function makeCsvImport(sectionLabel, hint, parser, list, exportHeaders, exportMapper, getData) {
     const row = el('div', { class: 'ab-section-row' });
     if (sectionLabel) row.appendChild(el('div', { class: 'ab-section-label' }, sectionLabel));
     const fileInput = document.createElement('input');
@@ -205,6 +221,14 @@ window.OWL = window.OWL || {};
       reader.readAsText(file, 'UTF-8');
     });
     row.appendChild(importBtn);
+    if (exportHeaders && exportMapper && getData) {
+      const exportBtn = btn('⬇ Eksportuj CSV', 'ab-btn-secondary', () => {
+        const items = getData() || [];
+        const filename = (sectionLabel || 'eksport').replace(/\s+/g, '_') + '.csv';
+        exportToCsv(filename, exportHeaders, items.map(exportMapper));
+      });
+      row.appendChild(exportBtn);
+    }
     row.appendChild(status);
     row.appendChild(fileInput);
     return row;
@@ -456,7 +480,7 @@ window.OWL = window.OWL || {};
         v => onChange(Object.assign(data, { items: v })),
         'Dodaj słowo'
       );
-      wrap.appendChild(makeCsvImport('Pozycje słowniczka', 'słowo; fonetyka; tłumaczenie; wskazówka; przykład (1. wiersz = nagłówek)', cols => cols[0] ? { word: cols[0], phonetic: cols[1]||'', translation: cols[2]||'', hint: cols[3]||'', example: cols[4]||'' } : null, list));
+      wrap.appendChild(makeCsvImport('Pozycje słowniczka', 'słowo; fonetyka; tłumaczenie; wskazówka; przykład (1. wiersz = nagłówek)', cols => cols[0] ? { word: cols[0], phonetic: cols[1]||'', translation: cols[2]||'', hint: cols[3]||'', example: cols[4]||'' } : null, list, ['słowo', 'fonetyka', 'tłumaczenie', 'wskazówka', 'przykład'], item => [item.word||'', item.phonetic||'', item.translation||'', item.hint||'', item.example||''], () => data.items));
       wrap.appendChild(list);
       return wrap;
     },
@@ -576,7 +600,7 @@ window.OWL = window.OWL || {};
         v => onChange(Object.assign(data, { items: v })),
         'Dodaj przykład'
       );
-      wrap.appendChild(makeCsvImport('Przykłady', 'wersja PL; wersja EN (1. wiersz = nagłówek)', cols => cols[0] ? { pl: cols[0], en: cols[1]||'' } : null, list));
+      wrap.appendChild(makeCsvImport('Przykłady', 'wersja PL; wersja EN (1. wiersz = nagłówek)', cols => cols[0] ? { pl: cols[0], en: cols[1]||'' } : null, list, ['pl', 'en'], item => [item.pl||'', item.en||''], () => data.items));
       wrap.appendChild(list);
       return wrap;
     },
@@ -656,7 +680,7 @@ window.OWL = window.OWL || {};
         v => onChange(Object.assign(data, { items: v })),
         'Dodaj słówko'
       );
-      wrap.appendChild(makeCsvImport('Słówka', 'emoji; PL; EN (1. wiersz = nagłówek)', cols => (cols[1]||cols[2]) ? { emoji: cols[0]||'', pl: cols[1]||'', en: cols[2]||'', image: '' } : null, list));
+      wrap.appendChild(makeCsvImport('Słówka', 'emoji; PL; EN (1. wiersz = nagłówek)', cols => (cols[1]||cols[2]) ? { emoji: cols[0]||'', pl: cols[1]||'', en: cols[2]||'', image: '' } : null, list, ['emoji', 'pl', 'en'], item => [item.emoji||'', item.pl||'', item.en||''], () => data.items));
       wrap.appendChild(list);
       return wrap;
     },
@@ -679,7 +703,7 @@ window.OWL = window.OWL || {};
         v => onChange(Object.assign(data, { items: v })),
         'Dodaj słówko'
       );
-      wrap.appendChild(makeCsvImport('Słówka', 'PL; EN (1. wiersz = nagłówek)', cols => cols[0] ? { pl: cols[0], en: cols[1]||'', image: '' } : null, list));
+      wrap.appendChild(makeCsvImport('Słówka', 'PL; EN (1. wiersz = nagłówek)', cols => cols[0] ? { pl: cols[0], en: cols[1]||'', image: '' } : null, list, ['pl', 'en'], item => [item.pl||'', item.en||''], () => data.items));
       wrap.appendChild(list);
       return wrap;
     },
@@ -700,7 +724,7 @@ window.OWL = window.OWL || {};
         v => onChange(Object.assign(data, { items: v })),
         'Dodaj zwrot'
       );
-      wrap.appendChild(makeCsvImport('Zwroty', 'wersja PL; wersja EN (1. wiersz = nagłówek)', cols => cols[0] ? { pl: cols[0], en: cols[1]||'' } : null, list));
+      wrap.appendChild(makeCsvImport('Zwroty', 'wersja PL; wersja EN (1. wiersz = nagłówek)', cols => cols[0] ? { pl: cols[0], en: cols[1]||'' } : null, list, ['pl', 'en'], item => [item.pl||'', item.en||''], () => data.items));
       wrap.appendChild(list);
       return wrap;
     },
