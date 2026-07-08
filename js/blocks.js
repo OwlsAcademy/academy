@@ -268,6 +268,71 @@ OWL.Blocks = (function () {
     return wrap(c);
   }
 
+  function renderAudio(block, opts) {
+    const d = block.data;
+    const c = card();
+    if (d.title) c.appendChild(blockTitle(d.title));
+    if (d.url) {
+      const audio = document.createElement('audio');
+      audio.controls = true;
+      audio.style.cssText = 'width:100%;margin:8px 0;';
+      const src = document.createElement('source');
+      src.src = d.url;
+      audio.appendChild(src);
+      audio.appendChild(document.createTextNode('Twoja przeglądarka nie obsługuje odtwarzacza audio.'));
+      c.appendChild(audio);
+    } else {
+      const ph = el('p', '', 'Brak URL pliku audio.');
+      ph.style.cssText = 'color:var(--ink-30);font-style:italic;font-size:.88rem;';
+      c.appendChild(ph);
+    }
+    if (d.caption) {
+      const cap = el('p', '', d.caption);
+      cap.style.cssText = 'font-size:.82rem;color:var(--ink-60);margin-top:4px;';
+      c.appendChild(cap);
+    }
+    return wrap(c);
+  }
+
+  function renderVideo(block, opts) {
+    const d = block.data;
+    const c = card();
+    if (d.title) c.appendChild(blockTitle(d.title));
+    if (d.url) {
+      const ytMatch = d.url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([A-Za-z0-9_-]{11})/);
+      if (ytMatch) {
+        const ratio = el('div', '');
+        ratio.style.cssText = 'position:relative;padding-bottom:56.25%;height:0;overflow:hidden;border-radius:10px;';
+        const iframe = document.createElement('iframe');
+        iframe.src = 'https://www.youtube.com/embed/' + ytMatch[1];
+        iframe.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture';
+        iframe.allowFullscreen = true;
+        iframe.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;border:0;';
+        ratio.appendChild(iframe);
+        c.appendChild(ratio);
+      } else {
+        const video = document.createElement('video');
+        video.controls = true;
+        video.style.cssText = 'width:100%;border-radius:10px;margin:8px 0;';
+        const src = document.createElement('source');
+        src.src = d.url;
+        video.appendChild(src);
+        video.appendChild(document.createTextNode('Twoja przeglądarka nie obsługuje odtwarzacza wideo.'));
+        c.appendChild(video);
+      }
+    } else {
+      const ph = el('p', '', 'Brak URL pliku wideo.');
+      ph.style.cssText = 'color:var(--ink-30);font-style:italic;font-size:.88rem;';
+      c.appendChild(ph);
+    }
+    if (d.caption) {
+      const cap = el('p', '', d.caption);
+      cap.style.cssText = 'font-size:.82rem;color:var(--ink-60);margin-top:6px;';
+      c.appendChild(cap);
+    }
+    return wrap(c);
+  }
+
   function renderHtml(block, opts) {
     const d = block.data;
     const div = el('div', 'block-wrap');
@@ -2398,6 +2463,8 @@ OWL.Blocks = (function () {
         case 'article':        return renderArticle(block, opts);
         case 'glossary':       return renderGlossary(block, opts);
         case 'image':          return renderImage(block, opts);
+        case 'audio':          return renderAudio(block, opts);
+        case 'video':          return renderVideo(block, opts);
         case 'html':           return renderHtml(block, opts);
         case 'info':           return renderInfo(block, opts);
         case 'table':          return renderTable(block, opts);

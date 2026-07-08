@@ -306,6 +306,8 @@ window.OWL = window.OWL || {};
     article: 'Artykuł',
     glossary: 'Słowniczek',
     image: 'Obraz',
+    audio: 'Audio',
+    video: 'Wideo',
     html: 'HTML',
     info: 'Info/Alert',
     table: 'Tabela',
@@ -358,6 +360,8 @@ window.OWL = window.OWL || {};
     article: { articleTitle: '', articleNote: '', image: '', text: '', footnote: '' },
     glossary: { items: [{ word: '', phonetic: '', translation: '', hint: '', example: '' }] },
     image: { image: '', caption: '' },
+    audio: { title: '', url: '', caption: '' },
+    video: { title: '', url: '', caption: '' },
     html: { html: '' },
     info: { title: '', text: '', tip: '', color: 'green' },
     table: { title: '', headers: ['', ''], rows: [['', '']] },
@@ -462,6 +466,22 @@ window.OWL = window.OWL || {};
       wrap.appendChild(el('div', { class: 'ab-section-label' }, 'Obraz'));
       wrap.appendChild(imageField(data.image, v => onChange(Object.assign(data, { image: v }))));
       wrap.appendChild(field('Podpis', textInput(data.caption, 'Podpis obrazu', v => onChange(Object.assign(data, { caption: v })))));
+      return wrap;
+    },
+
+    audio(data, onChange) {
+      const wrap = el('div', { class: 'ab-editor-body' });
+      wrap.appendChild(field('Tytuł', textInput(data.title, 'Tytuł (opcjonalny)', v => onChange(Object.assign(data, { title: v })))));
+      wrap.appendChild(field('URL pliku audio', textInput(data.url, 'https://... (.mp3, .ogg, .wav)', v => onChange(Object.assign(data, { url: v })))));
+      wrap.appendChild(field('Podpis', textInput(data.caption, 'Podpis lub opis nagrania', v => onChange(Object.assign(data, { caption: v })))));
+      return wrap;
+    },
+
+    video(data, onChange) {
+      const wrap = el('div', { class: 'ab-editor-body' });
+      wrap.appendChild(field('Tytuł', textInput(data.title, 'Tytuł (opcjonalny)', v => onChange(Object.assign(data, { title: v })))));
+      wrap.appendChild(field('URL wideo / YouTube', textInput(data.url, 'https://youtu.be/... lub https://... (.mp4)', v => onChange(Object.assign(data, { url: v })))));
+      wrap.appendChild(field('Podpis', textInput(data.caption, 'Podpis lub opis wideo', v => onChange(Object.assign(data, { caption: v })))));
       return wrap;
     },
 
@@ -1406,7 +1426,7 @@ window.OWL = window.OWL || {};
   const BLOCK_CATEGORIES = [
     {
       label: 'Wyświetlanie',
-      types: ['quote', 'discussion', 'article', 'glossary', 'image', 'html', 'info', 'table', 'examples', 'two-col', 'cta', 'comprehension']
+      types: ['quote', 'discussion', 'article', 'glossary', 'image', 'audio', 'video', 'html', 'info', 'table', 'examples', 'two-col', 'cta', 'comprehension']
     },
     {
       label: 'Słownictwo',
