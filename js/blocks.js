@@ -637,6 +637,114 @@ OWL.Blocks = (function () {
     return wrap(c);
   }
 
+  function renderSingleChoice(block, opts) {
+    const d = block.data;
+    const c = card();
+    if (d.title) c.appendChild(blockTitle(d.title));
+
+    const saved = OWL.Progress ? (OWL.Progress.getBlock(block.id) || {}) : {};
+    const wasAnswered = saved.answered;
+    const savedAnswer = saved.answer;
+
+    const qText = el('p', '', d.question || '');
+    qText.style.cssText = 'font-weight:600;margin-bottom:12px;font-size:.95rem;';
+    c.appendChild(qText);
+
+    const optBtns = [];
+    const expDiv = el('div', '');
+    expDiv.style.cssText = 'font-size:.82rem;color:var(--ink-60);margin-top:8px;font-style:italic;display:none;';
+
+    function applyAnswer(selected) {
+      optBtns.forEach(b => {
+        b.disabled = true;
+        b.classList.remove('correct', 'incorrect');
+        if (b.textContent === d.answer) b.classList.add('correct');
+        else if (b.textContent === selected) b.classList.add('incorrect');
+      });
+      if (d.explanation) {
+        expDiv.textContent = d.explanation;
+        expDiv.style.display = 'block';
+      }
+    }
+
+    (d.options || []).forEach(opt => {
+      const b = el('button', 'quiz-option', opt);
+      optBtns.push(b);
+      b.addEventListener('click', () => {
+        if (b.disabled) return;
+        applyAnswer(opt);
+        if (OWL.Progress) OWL.Progress.setBlock(block.id, { answered: true, answer: opt, score: opt === d.answer ? 1 : 0 });
+      });
+      c.appendChild(b);
+    });
+    c.appendChild(expDiv);
+
+    if (wasAnswered) applyAnswer(savedAnswer);
+    return wrap(c);
+  }
+
+  function renderMultiChoice(block, opts) {
+    const d = block.data;
+    const c = card();
+    if (d.title) c.appendChild(blockTitle(d.title));
+
+    const saved = OWL.Progress ? (OWL.Progress.getBlock(block.id) || {}) : {};
+    const wasChecked = saved.checked;
+    const items = d.items || [];
+    const selected = new Set(wasChecked ? (saved.selected || []) : []);
+    let locked = wasChecked;
+
+    const qText = el('p', '', d.question || '');
+    qText.style.cssText = 'font-weight:600;margin-bottom:12px;font-size:.95rem;';
+    c.appendChild(qText);
+
+    const expDiv = el('div', '');
+    expDiv.style.cssText = 'font-size:.82rem;color:var(--ink-60);margin-top:8px;font-style:italic;display:none;';
+
+    const optBtns = items.map((item, idx) => {
+      const b = el('button', 'quiz-option', item.text || '');
+      if (selected.has(idx)) b.classList.add('selected');
+      b.addEventListener('click', () => {
+        if (locked) return;
+        if (selected.has(idx)) { selected.delete(idx); b.classList.remove('selected'); }
+        else { selected.add(idx); b.classList.add('selected'); }
+      });
+      c.appendChild(b);
+      return b;
+    });
+
+    function applyCheck() {
+      locked = true;
+      optBtns.forEach((b, idx) => {
+        b.disabled = true;
+        b.classList.remove('selected');
+        if (items[idx] && items[idx].correct) b.classList.add('correct');
+        else if (selected.has(idx)) b.classList.add('incorrect');
+      });
+      if (d.explanation) {
+        expDiv.textContent = d.explanation;
+        expDiv.style.display = 'block';
+      }
+    }
+
+    if (wasChecked) {
+      applyCheck();
+    } else {
+      const checkBtn = saveBtn('Sprawdź odpowiedź');
+      checkBtn.addEventListener('click', () => {
+        const selArr = [...selected];
+        applyCheck();
+        checkBtn.remove();
+        const correctSelected = selArr.filter(i => items[i] && items[i].correct).length;
+        const totalCorrect = items.filter(it => it.correct).length;
+        if (OWL.Progress) OWL.Progress.setBlock(block.id, { checked: true, selected: selArr, score: correctSelected, total: totalCorrect });
+      });
+      c.appendChild(checkBtn);
+    }
+    c.appendChild(expDiv);
+    return wrap(c);
+  }
+
   function renderGapfill(block, opts) {
     const d = block.data;
     const c = card();
@@ -2285,6 +2393,8 @@ OWL.Blocks = (function () {
         case 'phrases':        return renderPhrases(block, opts);
         // Interactive
         case 'quiz':           return renderQuiz(block, opts);
+        case 'single-choice':  return renderSingleChoice(block, opts);
+        case 'multi-choice':   return renderMultiChoice(block, opts);
         case 'gapfill':        return renderGapfill(block, opts);
         case 'matching':       return renderMatching(block, opts);
         case 'translation':    return renderTranslation(block, opts);

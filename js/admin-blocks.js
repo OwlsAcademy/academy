@@ -280,6 +280,8 @@ window.OWL = window.OWL || {};
     'vocab-table': 'Tabela słówek',
     phrases: 'Zwroty',
     quiz: 'Quiz',
+    'single-choice': 'Jednokrotny wybór',
+    'multi-choice': 'Wielokrotny wybór',
     gapfill: 'Uzupełnianie luk',
     matching: 'Dopasowywanie',
     translation: 'Tłumaczenie',
@@ -330,6 +332,8 @@ window.OWL = window.OWL || {};
     'vocab-table': { title: '', color: 'green', items: [{ pl: '', en: '', image: '' }] },
     phrases: { title: '', items: [{ pl: '', en: '' }] },
     quiz: { title: '', instruction: '', questions: [{ q: '', options: ['', '', '', ''], answer: '', image: '', explanation: '' }] },
+    'single-choice': { title: '', question: '', options: ['', '', '', ''], answer: '', explanation: '' },
+    'multi-choice': { title: '', question: '', items: [{ text: '', correct: false }, { text: '', correct: false }, { text: '', correct: false }, { text: '', correct: false }], explanation: '' },
     gapfill: { title: '', instruction: '', wordbank: [''], items: [{ sentence: '', answer: '' }] },
     matching: { title: '', instruction: '', pairs: [{ word: '', def: '' }] },
     translation: { title: '', instruction: '', items: [{ pl: '', hint: '', en: '' }] },
@@ -663,6 +667,41 @@ window.OWL = window.OWL || {};
         v => onChange(Object.assign(data, { questions: v })),
         'Dodaj pytanie'
       ));
+      return wrap;
+    },
+
+    'single-choice'(data, onChange) {
+      const wrap = el('div', { class: 'ab-editor-body' });
+      wrap.appendChild(field('Tytuł', textInput(data.title, 'Tytuł (opcjonalny)', v => onChange(Object.assign(data, { title: v })))));
+      wrap.appendChild(field('Pytanie', textArea(data.question, 'Treść pytania...', v => onChange(Object.assign(data, { question: v })))));
+      wrap.appendChild(el('div', { class: 'ab-section-label' }, 'Opcje odpowiedzi'));
+      wrap.appendChild(stringList(data.options, 'Opcja...', v => onChange(Object.assign(data, { options: v })), 'Dodaj opcję'));
+      wrap.appendChild(field('Poprawna odpowiedź', textInput(data.answer, 'Wpisz dokładną treść poprawnej opcji', v => onChange(Object.assign(data, { answer: v })))));
+      wrap.appendChild(field('Wyjaśnienie', textInput(data.explanation, 'Opcjonalne wyjaśnienie po odpowiedzi', v => onChange(Object.assign(data, { explanation: v })))));
+      return wrap;
+    },
+
+    'multi-choice'(data, onChange) {
+      const wrap = el('div', { class: 'ab-editor-body' });
+      wrap.appendChild(field('Tytuł', textInput(data.title, 'Tytuł (opcjonalny)', v => onChange(Object.assign(data, { title: v })))));
+      wrap.appendChild(field('Pytanie', textArea(data.question, 'Treść pytania...', v => onChange(Object.assign(data, { question: v })))));
+      wrap.appendChild(el('div', { class: 'ab-section-label' }, 'Opcje (zaznacz poprawne)'));
+      wrap.appendChild(dynamicList(
+        data.items,
+        (item, i, update, remove) => {
+          const row = el('div', { class: 'ab-pair-row' });
+          const chk = el('input', { type: 'checkbox', class: 'ab-checkbox', title: 'Poprawna odpowiedź' });
+          chk.checked = !!item.correct;
+          chk.addEventListener('change', () => update({ ...item, correct: chk.checked }));
+          row.appendChild(chk);
+          row.appendChild(textInput(item.text, 'Treść opcji...', v => update({ ...item, text: v })));
+          row.appendChild(btn('✕', 'ab-btn-remove', remove));
+          return row;
+        },
+        v => onChange(Object.assign(data, { items: v })),
+        'Dodaj opcję'
+      ));
+      wrap.appendChild(field('Wyjaśnienie', textInput(data.explanation, 'Opcjonalne wyjaśnienie', v => onChange(Object.assign(data, { explanation: v })))));
       return wrap;
     },
 
@@ -1305,7 +1344,7 @@ window.OWL = window.OWL || {};
     },
     {
       label: 'Ćwiczenia',
-      types: ['quiz', 'gapfill', 'matching', 'translation', 'scramble', 'transform', 'errorcorrect', 'ownsentences', 'collocations', 'wordform', 'tf', 'jumble', 'vic', 'openq', 'sentcomp', 'vocab-mcq']
+      types: ['quiz', 'single-choice', 'multi-choice', 'gapfill', 'matching', 'translation', 'scramble', 'transform', 'errorcorrect', 'ownsentences', 'collocations', 'wordform', 'tf', 'jumble', 'vic', 'openq', 'sentcomp', 'vocab-mcq']
     },
     {
       label: 'Fiszki',

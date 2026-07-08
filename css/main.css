@@ -650,6 +650,7 @@ input:focus, textarea:focus, select:focus {
   transition: all .2s;
 }
 .quiz-option:hover { border-color: var(--amber); background: var(--amber-bg); }
+.quiz-option.selected { background: var(--amber-bg); border-color: var(--amber); color: var(--ink); }
 .quiz-option.correct { background: var(--teal-light); border-color: var(--teal); color: var(--teal); }
 .quiz-option.incorrect { background: var(--coral-light); border-color: var(--coral); color: var(--coral); }
 
