@@ -1501,3 +1501,24 @@ input:focus, textarea:focus, select:focus {
   .fc-rating { flex-direction: column; }
   .fc-rating button { width: 100%; }
 }
+
+@media (max-width: 600px) {
+  /* On phones: wrap nav so lesson tabs get the full first row,
+     ⭐/📝 utility buttons move to a second row below */
+  .nav-bar { flex-wrap: wrap; }
+
+  .nav-divider.nav-util {
+    flex: 0 0 100%;
+    height: 1px;
+    background: rgba(255,255,255,.12);
+    margin: 2px 0;
+  }
+
+  .nav-tab.nav-util {
+    flex: 1;
+    justify-content: center;
+    text-align: center;
+    padding: 7px 8px;
+    font-size: .8rem;
+  }
+}
