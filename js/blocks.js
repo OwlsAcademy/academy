@@ -374,17 +374,6 @@ OWL.Blocks = (function () {
     // this application (analogous to a CMS "raw HTML" widget).  Student-
     // supplied input is never passed to this code path.
     div.innerHTML = d.html || ''; // trusted teacher HTML — no sanitisation by design
-
-    // Strip body/html rules from embedded <style> tags. AI-generated blocks
-    // often include standalone-page boilerplate (`body { max-width:… margin:0 auto }`)
-    // which leaks globally and breaks the app layout when injected into the DOM.
-    div.querySelectorAll('style').forEach(st => {
-      st.textContent = st.textContent.replace(
-        /(?:^|})\s*(?:html\s*,\s*)?body(?:\s*,\s*html)?\s*\{[^}]*\}/g,
-        ''
-      );
-    });
-
     return div;
   }
 
