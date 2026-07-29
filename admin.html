@@ -2114,6 +2114,9 @@ document.getElementById('previewBtn').addEventListener('click', () => {
 
 document.getElementById('previewCloseBtn').addEventListener('click', () => {
   document.getElementById('previewOverlay').classList.remove('open');
+  // Clear content so any injected <style> tags are removed from the DOM
+  // and stop affecting the admin panel styles.
+  document.getElementById('previewContent').textContent = '';
 });
 
 // ── AI GENERATOR ──────────────────────────────────────────────────
