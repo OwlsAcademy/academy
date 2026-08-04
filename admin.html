@@ -702,6 +702,51 @@ function renderTabEditor() {
       renderTabEditor();
     });
     area.appendChild(picker);
+
+    // Import block from JSON
+    const importStatus = document.createElement('span');
+    importStatus.className = 'ab-csv-hint';
+    const jsonInput = document.createElement('input');
+    jsonInput.type = 'file';
+    jsonInput.accept = '.json,application/json';
+    jsonInput.style.display = 'none';
+    jsonInput.addEventListener('change', () => {
+      const file = jsonInput.files && jsonInput.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        try {
+          const parsed = JSON.parse(ev.target.result);
+          if (!parsed.type || !parsed.data) {
+            importStatus.textContent = '✗ Nieprawidłowy format (brak type/data)';
+            return;
+          }
+          if (!OWL.AdminBlocks.BLOCK_TYPES.includes(parsed.type)) {
+            importStatus.textContent = '✗ Nieznany typ bloku: ' + parsed.type;
+            return;
+          }
+          const block = { id: Date.now().toString(36) + Math.random().toString(36).slice(2,7), type: parsed.type, data: JSON.parse(JSON.stringify(parsed.data)) };
+          tab.blocks.push(block);
+          renderTabEditor();
+          jsonInput.value = '';
+        } catch (_) {
+          importStatus.textContent = '✗ Błąd parsowania JSON';
+        }
+      };
+      reader.readAsText(file, 'UTF-8');
+    });
+    const importRow = document.createElement('div');
+    importRow.className = 'ab-section-row';
+    importRow.style.marginTop = '8px';
+    const importBtn = document.createElement('button');
+    importBtn.className = 'ab-btn ab-btn-secondary';
+    importBtn.type = 'button';
+    importBtn.textContent = '⬆ Importuj blok z JSON';
+    importBtn.addEventListener('click', () => jsonInput.click());
+    importRow.appendChild(importBtn);
+    importRow.appendChild(importStatus);
+    importRow.appendChild(jsonInput);
+    area.appendChild(importRow);
   }
 
   // Block list

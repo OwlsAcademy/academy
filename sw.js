@@ -1,6 +1,6 @@
 'use strict';
 
-const CACHE = 'owls-academy-v32';
+const CACHE = 'owls-academy-v33';
 
 const PRECACHE = [
   './css/main.css',
