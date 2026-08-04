@@ -1559,7 +1559,7 @@ window.OWL = window.OWL || {};
 
   // ─── Block picker ────────────────────────────────────────────────────────────
 
-  function renderBlockPicker(onAdd) {
+  function renderBlockPicker(onAdd, onImportBlock) {
     const wrap = el('div', { class: 'ab-picker' });
     wrap.appendChild(el('div', { class: 'ab-picker-title' }, 'Dodaj blok'));
 
@@ -1573,6 +1573,34 @@ window.OWL = window.OWL || {};
       });
       wrap.appendChild(grid);
     });
+
+    // "Ogólne" group — utility actions (import from JSON)
+    wrap.appendChild(el('div', { class: 'ab-picker-cat-label' }, 'Ogólne'));
+    const genGrid = el('div', { class: 'ab-picker-grid' });
+    const jsonInput = document.createElement('input');
+    jsonInput.type = 'file';
+    jsonInput.accept = '.json,application/json';
+    jsonInput.style.display = 'none';
+    jsonInput.addEventListener('change', () => {
+      const file = jsonInput.files && jsonInput.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        try {
+          const parsed = JSON.parse(ev.target.result);
+          if (!parsed.type || !parsed.data || !BLOCK_DEFAULTS[parsed.type]) return;
+          const block = { id: uid(), type: parsed.type, data: JSON.parse(JSON.stringify(parsed.data)) };
+          if (onImportBlock) onImportBlock(block);
+        } catch (_) {}
+        jsonInput.value = '';
+      };
+      reader.readAsText(file, 'UTF-8');
+    });
+    const importPickerBtn = el('button', { class: 'ab-picker-btn', type: 'button', title: 'Importuj blok z pliku JSON' }, '⬆ Importuj z JSON');
+    importPickerBtn.addEventListener('click', () => jsonInput.click());
+    genGrid.appendChild(importPickerBtn);
+    genGrid.appendChild(jsonInput);
+    wrap.appendChild(genGrid);
 
     return wrap;
   }
@@ -1729,12 +1757,19 @@ window.OWL = window.OWL || {};
     wrap.appendChild(importRow);
 
     // Picker
-    const picker = renderBlockPicker((type) => {
-      const newBlock = OWL.AdminBlocks.newBlock(type);
-      currentTab = { ...currentTab, blocks: [...(currentTab.blocks || []), newBlock] };
-      onTabChange(currentTab);
-      redraw();
-    });
+    const picker = renderBlockPicker(
+      (type) => {
+        const newBlock = OWL.AdminBlocks.newBlock(type);
+        currentTab = { ...currentTab, blocks: [...(currentTab.blocks || []), newBlock] };
+        onTabChange(currentTab);
+        redraw();
+      },
+      (block) => {
+        currentTab = { ...currentTab, blocks: [...(currentTab.blocks || []), block] };
+        onTabChange(currentTab);
+        redraw();
+      }
+    );
     wrap.appendChild(picker);
 
     return wrap;
@@ -1844,8 +1879,8 @@ window.OWL = window.OWL || {};
       return renderTabManager(tabs, onTabsChange || (() => {}));
     },
 
-    renderBlockPicker(onAdd) {
-      return renderBlockPicker(onAdd || (() => {}));
+    renderBlockPicker(onAdd, onImportBlock) {
+      return renderBlockPicker(onAdd || (() => {}), onImportBlock);
     }
   };
 
