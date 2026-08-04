@@ -333,10 +333,11 @@ window.OWL = window.OWL || {};
     return wrap;
   }
 
-  // Block editor header with title and delete button
-  function blockHeader(typeName, onDelete) {
+  // Block editor header with title, export and delete buttons
+  function blockHeader(typeName, onDelete, onExport) {
     const header = el('div', { class: 'ab-block-header' });
     header.appendChild(el('span', { class: 'ab-block-type' }, typeName));
+    if (onExport) header.appendChild(btn('⬇ Eksportuj', 'ab-btn-export', onExport));
     header.appendChild(btn('✕ Usuń blok', 'ab-btn-delete', onDelete));
     return header;
   }
@@ -1527,7 +1528,18 @@ window.OWL = window.OWL || {};
     });
 
     const handle = dragHandle();
-    const header = blockHeader(BLOCK_LABELS[block.type] || block.type, onDelete || (() => {}));
+    const onExport = () => {
+      const json = JSON.stringify({ type: block.type, data: block.data }, null, 2);
+      const blob = new Blob([json], { type: 'application/json' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'block-' + block.type + '.json';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    };
+    const header = blockHeader(BLOCK_LABELS[block.type] || block.type, onDelete || (() => {}), onExport);
     header.insertBefore(handle, header.firstChild);
     wrapper.appendChild(header);
 
@@ -1675,6 +1687,46 @@ window.OWL = window.OWL || {};
 
     redraw();
     wrap.appendChild(blocksContainer);
+
+    // Import block from JSON file
+    const importStatus = el('span', { class: 'ab-csv-hint' }, '');
+    const jsonFileInput = document.createElement('input');
+    jsonFileInput.type = 'file';
+    jsonFileInput.accept = '.json,application/json';
+    jsonFileInput.style.display = 'none';
+    jsonFileInput.addEventListener('change', () => {
+      const file = jsonFileInput.files && jsonFileInput.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const parsed = JSON.parse(e.target.result);
+          if (!parsed.type || !parsed.data) {
+            importStatus.textContent = '✗ Nieprawidłowy format (brak type/data)';
+            return;
+          }
+          if (!BLOCK_DEFAULTS[parsed.type]) {
+            importStatus.textContent = '✗ Nieznany typ bloku: ' + parsed.type;
+            return;
+          }
+          const newBlock = { id: uid(), type: parsed.type, data: JSON.parse(JSON.stringify(parsed.data)) };
+          currentTab = { ...currentTab, blocks: [...(currentTab.blocks || []), newBlock] };
+          onTabChange(currentTab);
+          redraw();
+          importStatus.textContent = '✓ Zaimportowano: ' + (BLOCK_LABELS[parsed.type] || parsed.type);
+          jsonFileInput.value = '';
+          setTimeout(() => { importStatus.textContent = ''; }, 3000);
+        } catch (_) {
+          importStatus.textContent = '✗ Błąd parsowania JSON';
+        }
+      };
+      reader.readAsText(file, 'UTF-8');
+    });
+    const importRow = el('div', { class: 'ab-section-row' });
+    importRow.appendChild(btn('⬆ Importuj blok z JSON', 'ab-btn-secondary', () => jsonFileInput.click()));
+    importRow.appendChild(importStatus);
+    importRow.appendChild(jsonFileInput);
+    wrap.appendChild(importRow);
 
     // Picker
     const picker = renderBlockPicker((type) => {
@@ -1918,6 +1970,14 @@ window.OWL = window.OWL || {};
   font-weight: 600;
   transition: background 0.15s, border-color 0.15s;
 }
+
+.ab-btn-export {
+  background: transparent;
+  border-color: #89b4fa;
+  color: #89b4fa;
+  font-size: 11px;
+}
+.ab-btn-export:hover { background: rgba(137,180,250,0.12); }
 
 .ab-btn-delete {
   background: transparent;
