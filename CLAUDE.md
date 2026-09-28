@@ -20,7 +20,7 @@ Lokalnie: dowolny serwer statyczny w katalogu repo (np. `npx serve .`). Front za
 | `admin.html` | Panel nauczyciela (~130 KB, jeden plik): kreator lekcji, uczniowie i przypisania, postępy (odpowiedzi, „Sprawdź z AI”), ustawienia, generator AI |
 | `js/blocks.js` | Renderery wszystkich bloków + `normalize()` + główny `switch` w `render()` |
 | `js/admin-blocks.js` | Edytory bloków: `BLOCK_LABELS`, `BLOCK_DEFAULTS`, `EDITORS`, `BLOCK_CATEGORIES` (picker), import/eksport CSV i JSON bloku, upload do Storage |
-| `js/progress.js` | Zapis postępu ucznia (debounce 1,8 s, upsert do `lesson_progress`) |
+| `js/progress.js` | Zapis postępu ucznia: debounce 1,8 s, wysyła **tylko zmienione** bloki/karty przez RPC `save_lesson_progress` (serwer scala `jsonb ||`); przy `pagehide`/ukryciu karty wysyła od razu `fetch` z `keepalive` |
 | `js/offline.js`, `sw.js` | PWA: cache localStorage + kolejka zapisów offline; service worker |
 | `js/srs.js` | SM-2 dla fiszek |
 | `db/*.sql` | Skrypty uruchamiane ręcznie w Supabase SQL Editor (patrz niżej) |
@@ -57,7 +57,9 @@ Edytory zwracają dane przez `onChange(Object.assign(data, …))`. Unikaj domkni
 
 ## Zmiany w bazie
 
-Nie ma systemu migracji. Każda zmiana to **idempotentny** skrypt w `db/` (`IF NOT EXISTS`, `CREATE OR REPLACE`, `DROP POLICY IF EXISTS`) z nagłówkiem po polsku: co robi, jak uruchomić, jak zweryfikować. Właściciel uruchamia go ręcznie w Supabase Dashboard → SQL Editor. `db/migration.sql` to schemat bazowy, a kolejne skrypty należy uruchamiać po nim w tej kolejności: `security-fix.sql`, `storage-media.sql`, `student-checkin.sql`.
+Nie ma systemu migracji. Każda zmiana to **idempotentny** skrypt w `db/` (`IF NOT EXISTS`, `CREATE OR REPLACE`, `DROP POLICY IF EXISTS`) z nagłówkiem po polsku: co robi, jak uruchomić, jak zweryfikować. Właściciel uruchamia go ręcznie w Supabase Dashboard → SQL Editor. `db/migration.sql` to schemat bazowy, a kolejne skrypty należy uruchamiać po nim w tej kolejności: `security-fix.sql`, `storage-media.sql`, `student-checkin.sql`, `save-progress.sql`.
+
+Nigdy nie zapisuj z frontu całego `block_progress`/`srs_data` naraz, bo starsza kopia z innej karty lub urządzenia nadpisze nowsze odpowiedzi. Zmiany postępu idą przez `OWL.Progress.set*()`, a te trafiają do RPC scalającego.
 
 ## AI
 

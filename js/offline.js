@@ -6,8 +6,25 @@ OWL.Offline = (() => {
   function _get(key) {
     try { return JSON.parse(localStorage.getItem(key)); } catch { return null; }
   }
+  // Lesson content caches (owl_l_*, owl_ls_*) can hold MBs of base64 images.
+  // When storage is full, drop them so progress and the sync queue still fit —
+  // lesson content can always be re-downloaded, unsynced answers can't.
+  function _evictLessonCaches() {
+    Object.keys(localStorage)
+      .filter(k => k.startsWith('owl_l_') || k.startsWith('owl_ls_'))
+      .forEach(k => localStorage.removeItem(k));
+  }
+
   function _set(key, val) {
-    try { localStorage.setItem(key, JSON.stringify(val)); }
+    const str = JSON.stringify(val);
+    try { localStorage.setItem(key, str); return; }
+    catch (e) {
+      if (key.startsWith('owl_l_') || key.startsWith('owl_ls_')) {
+        console.warn('[OWL offline] localStorage pełny — pomijam cache lekcji', key);
+        return;
+      }
+    }
+    try { _evictLessonCaches(); localStorage.setItem(key, str); }
     catch (e) { console.warn('[OWL offline] localStorage pełny?', e); }
   }
 
@@ -49,13 +66,27 @@ OWL.Offline = (() => {
   // ── SYNC QUEUE ───────────────────────────────────────────────────
   function enqueue(entry) {
     const q = _get(K.queue) || [];
-    // Deduplicate — merge same student+lesson into one entry
-    const i = q.findIndex(x =>
-      x.table === entry.table &&
-      x.data?.student_id === entry.data?.student_id &&
-      x.data?.lesson_id  === entry.data?.lesson_id
-    );
-    if (i >= 0) q[i] = entry; else q.push(entry);
+    if (entry.type === 'rpc') {
+      // Partial progress changes — merge into one entry per student+lesson
+      const a = entry.args;
+      const i = q.findIndex(x => x.type === 'rpc' && x.fn === entry.fn &&
+        x.args.p_student_id === a.p_student_id && x.args.p_lesson_id === a.p_lesson_id);
+      if (i >= 0) {
+        const o = q[i].args;
+        o.p_blocks  = (o.p_blocks || a.p_blocks) ? { ...o.p_blocks, ...a.p_blocks } : null;
+        o.p_srs     = (o.p_srs    || a.p_srs)    ? { ...o.p_srs,    ...a.p_srs }    : null;
+        if (a.p_mywords != null) o.p_mywords = a.p_mywords;
+        if (a.p_notes   != null) o.p_notes   = a.p_notes;
+      } else q.push(entry);
+    } else {
+      // Legacy whole-row upsert — latest entry per student+lesson wins
+      const i = q.findIndex(x =>
+        x.table === entry.table &&
+        x.data?.student_id === entry.data?.student_id &&
+        x.data?.lesson_id  === entry.data?.lesson_id
+      );
+      if (i >= 0) q[i] = entry; else q.push(entry);
+    }
     _set(K.queue, q);
   }
 
@@ -67,8 +98,9 @@ OWL.Offline = (() => {
     const failed = [];
     for (const op of q) {
       try {
-        const { error } = await sb.from(op.table)
-          .upsert(op.data, { onConflict: op.conflict });
+        const { error } = op.type === 'rpc'
+          ? await sb.rpc(op.fn, op.args)
+          : await sb.from(op.table).upsert(op.data, { onConflict: op.conflict });
         if (error) throw error;
       } catch { failed.push(op); }
     }
