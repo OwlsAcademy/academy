@@ -1168,7 +1168,7 @@ function buildAnswerCheckPrompt(lesson, blockProgress) {
     ownsentences:'Własne zdania', wordform:'Formy wyrazu', tf:'Prawda/Fałsz',
     vic:'Słowo w kontekście', openq:'Pytania otwarte', sentcomp:'Dokończ zdanie',
     ranking:'Ranking', checklist:'Lista kontrolna', 'hw-write':'Zadanie pisemne',
-    'vocab-mcq':'Vocab MCQ'
+    'vocab-mcq':'Vocab MCQ', html:'Blok HTML'
   };
 
   let num = 1;
@@ -1288,6 +1288,18 @@ function buildAnswerCheckPrompt(lesson, blockProgress) {
           });
           break;
 
+        case 'html': {
+          // Fields captured from teacher HTML: section, question/sentence with ___, answer
+          let lastSection = null;
+          (saved.items || []).forEach((it, i) => {
+            if (it.s && it.s !== lastSection) { lines.push(`  [${it.s}]`); lastSection = it.s; }
+            lines.push(`  ${i+1}. ${it.q || '(bez kontekstu)'}`);
+            lines.push(`     Odpowiedź ucznia: ${it.a}`);
+            if (it.e != null) lines.push(`     Oczekiwana: ${it.e}`);
+          });
+          break;
+        }
+
         case 'hw-write':
           if (saved.text) {
             lines.push(`  Polecenie: ${d.prompt || d.title || '(brak)'}`);
@@ -1328,7 +1340,7 @@ function renderStudentAnswers(lesson, blockProgress) {
     ownsentences:'Własne zdania', wordform:'Formy wyrazu', tf:'Prawda/Fałsz',
     vic:'Słowo w kontekście', openq:'Pytania otwarte', sentcomp:'Dokończ zdanie',
     ranking:'Ranking', checklist:'Lista kontrolna', 'hw-write':'Zadanie pisemne',
-    'vocab-mcq':'Vocab MCQ'
+    'vocab-mcq':'Vocab MCQ', html:'Blok HTML'
   };
 
   blocks.forEach(block => {
@@ -1534,6 +1546,25 @@ function renderStudentAnswers(lesson, blockProgress) {
         r.style.cssText = 'font-size:.82rem';
         r.textContent = saved.completed ? '✅ Ukończono' : '⏳ Nie ukończono';
         bWrap.appendChild(r);
+        break;
+      }
+
+      case 'html': {
+        const items = saved.items || [];
+        if (saved.total) bWrap.appendChild(aRow('Wynik (pola z data-answer):', `${saved.score} / ${saved.total}`, saved.score === saved.total));
+        let lastSection = null;
+        items.forEach(it => {
+          if (it.s && it.s !== lastSection) {
+            const h = el('div', null, it.s);
+            h.style.cssText = 'font-size:.74rem;font-weight:700;color:var(--ink-60);margin:.45rem 0 .15rem';
+            bWrap.appendChild(h);
+            lastSection = it.s;
+          }
+          const r = aRow(it.q, it.a, 'ok' in it ? it.ok : undefined);
+          if (it.ok === false && it.e) r.appendChild(correctHint(it.e));
+          bWrap.appendChild(r);
+        });
+        if (!items.length) bWrap.appendChild(aRow('', 'Brak wypełnionych pól'));
         break;
       }
 
@@ -2591,6 +2622,19 @@ checklist
 { "title": "({{INSTRUCTION_LANG_NAME}})", "items": ["task description in {{INSTRUCTION_LANG_NAME}}"] }
 
 (For homework exercises, reuse: gapfill, translation, matching, quiz, transform, errorcorrect, ownsentences, sentcomp)
+
+── CUSTOM HTML BLOCK (use sparingly) ───────────
+
+html  (ONLY when no block above fits — e.g. a text with gaps in a special layout, a table to fill in, a custom interactive task)
+{ "title": "({{INSTRUCTION_LANG_NAME}})", "html": "<style>.ab12-box{padding:16px}</style><div class=\\"ab12-box\\"><p>She <input id=\\"ab12-g1\\" data-answer=\\"goes\\"> to school.</p></div>" }
+Rules for "html" (it runs in an isolated frame; every filled-in field is saved and shown to the teacher):
+• Self-contained fragment: all CSS in one <style>; every class starts with a short unique prefix (e.g. ab12-); never style body, html, :root or bare tags
+• Every answer field (input, select, textarea) has a unique id (same prefix) and data-answer="correct answer"; omit data-answer only for free writing
+• Radio/checkbox questions: one name per question; the text of each option inside its <label>
+• Elements used only for UI mechanics (tabs, card flips, show/hide toggles) get data-owl-ignore
+• Answer keys only inside <details><summary>…</summary>…</details>
+• Scripts are allowed but optional; no external files except Google Fonts
+• The value is a JSON string — escape double quotes and newlines correctly
 
 ═══════════════════════════════════════════════
 QUANTITY REQUIREMENTS (for {{DURATION}}-minute lesson)

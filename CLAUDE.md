@@ -43,6 +43,15 @@ Około 55 typów. `OWL.Blocks.normalize()` mapuje typy v1 (`vocab-sentcomp`, `vo
 4. `admin.html` → `getDefaultPromptTemplate()`: schemat JSON bloku, **dokładnie w formacie czytanym przez renderer**.
 5. Podbicie `CACHE` w `sw.js`.
 
+### Blok `html`
+
+HTML nauczycielki (często z zewnętrznego AI) renderuje się w `<iframe srcdoc>` z `sandbox="allow-scripts allow-popups allow-popups-to-escape-sandbox allow-modals"`, **bez `allow-same-origin`**. Nie dodawaj `allow-same-origin`: te bloki renderuje też panel admina, a skrypt z ramki dostałby wtedy sesję admina. Do ramki wstrzykiwany jest `htmlBlockBridge()` (`js/blocks.js`). Ten sam mechanizm działa dla fragmentów HTML i pełnych dokumentów. Most:
+- raportuje wysokość (`ResizeObserver`), więc ramka nie ma własnego scrolla;
+- zapisuje wszystkie `input`/`textarea`/`select` do `block_progress[id] = { values, items, score?, total? }`. `values` służą do przywracania, `items` (`{s: sekcja, q: zdanie z ___, a: odpowiedź, e?: data-answer, ok?}`) do widoku postępów i „Sprawdź z AI”;
+- klucz pola: `id`, potem `name` + indeks opcji dla radio/checkbox, a w ostateczności pozycja pola (kruche, jeśli nauczycielka zmieni HTML);
+- pomija pola w `[data-owl-ignore]`. Ukryte przez CSS radio/checkboxy (zakładki, obracanie fiszek) są przywracane, ale nie trafiają do `items`;
+- `data-answer` na polu = poprawna odpowiedź → wynik `score/total`.
+
 Edytory zwracają dane przez `onChange(Object.assign(data, …))`. Unikaj domknięć na nieaktualnym `data` (było źródłem kilku błędów).
 
 ## Bezpieczeństwo (obowiązujące zasady)
