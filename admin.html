@@ -729,6 +729,7 @@ function renderBlockList(tab, container) {
   if (!OWL.AdminBlocks) return;
 
   tab.blocks.forEach((block, bi) => {
+    block = tab.blocks[bi] = OWL.Blocks.normalize(block);
     const wrapper = document.createElement('div');
     wrapper.dataset.blockId = block.id;
 
@@ -744,7 +745,9 @@ function renderBlockList(tab, container) {
         const mediaPrefix = SUPABASE_URL + '/storage/v1/object/public/media/';
         if (blockUrl.startsWith(mediaPrefix)) {
           const filePath = blockUrl.slice(mediaPrefix.length).split('?')[0];
-          sb.storage.from('media').remove([filePath]).catch(e => console.warn('[OWL] Storage delete failed:', e));
+          sb.storage.from('media').remove([filePath])
+            .then(({ error }) => { if (error) console.warn('[OWL] Storage delete failed:', error); })
+            .catch(e => console.warn('[OWL] Storage delete failed:', e));
         }
         tab.blocks.splice(bi, 1);
         renderBlockList(tab, container);
@@ -1170,7 +1173,7 @@ function buildAnswerCheckPrompt(lesson, blockProgress) {
 
   let num = 1;
   tabs.forEach(tab => {
-    (tab.blocks || []).forEach(block => {
+    (tab.blocks || []).map(OWL.Blocks.normalize).forEach(block => {
       const saved = blockProgress[block.id];
       if (!saved) return;
       const d = block.data || {};
@@ -1302,7 +1305,7 @@ function buildAnswerCheckPrompt(lesson, blockProgress) {
 
 function renderStudentAnswers(lesson, blockProgress) {
   const tabs = lesson.tabs || [];
-  const blocks = tabs.flatMap(t => t.blocks || []).filter(b => blockProgress[b.id]);
+  const blocks = tabs.flatMap(t => t.blocks || []).map(OWL.Blocks.normalize).filter(b => blockProgress[b.id]);
   if (!blocks.length) return null;
 
   const wrap = el('div');
@@ -2419,7 +2422,7 @@ Recommended block order:
 
 TAB 2 — "{{TAB_VOCAB}}" 🦉  id: "tab_vocab"
 Recommended block order:
-  vocab-grid → vocab-table → phrases → matching → gapfill → vocab-mcq → vocab-sentcomp → vocab-discussion
+  vocab-grid → vocab-table → phrases → matching → gapfill → vocab-mcq → sentcomp → discussion
 
 TAB 3 — "{{TAB_GRAMMAR}}" 🦉  id: "tab_grammar"
 Recommended block order:
@@ -2510,22 +2513,22 @@ transform
 { "title": "({{INSTRUCTION_LANG_NAME}})", "instruction": "({{INSTRUCTION_LANG_NAME}})", "items": [{ "original": "{{TARGET_LANG_NAME}} sentence", "instruction": "transformation instruction in {{INSTRUCTION_LANG_NAME}}", "answer": "{{TARGET_LANG_NAME}} answer", "hint": "optional" }] }
 
 errorcorrect
-{ "title": "({{INSTRUCTION_LANG_NAME}})", "instruction": "({{INSTRUCTION_LANG_NAME}})", "items": [{ "sentence": "{{TARGET_LANG_NAME}} sentence WITH error", "error": "wrong part", "correction": "correct part", "explanation": "{{INSTRUCTION_LANG_NAME}}" }] }
+{ "title": "({{INSTRUCTION_LANG_NAME}})", "instruction": "({{INSTRUCTION_LANG_NAME}})", "items": [{ "sentence": "{{TARGET_LANG_NAME}} sentence WITH one error", "answer": "the whole corrected {{TARGET_LANG_NAME}} sentence", "explanation": "{{INSTRUCTION_LANG_NAME}}" }] }
 
 ownsentences
 { "title": "({{INSTRUCTION_LANG_NAME}})", "instruction": "({{INSTRUCTION_LANG_NAME}})", "structures": ["structure 1", "structure 2"], "example": "example sentence in {{TARGET_LANG_NAME}}" }
 
 sentcomp  (sentence completion)
-{ "title": "({{INSTRUCTION_LANG_NAME}})", "instruction": "({{INSTRUCTION_LANG_NAME}})", "items": [{ "starter": "{{TARGET_LANG_NAME}} sentence starter..." }] }
+{ "title": "({{INSTRUCTION_LANG_NAME}})", "instruction": "({{INSTRUCTION_LANG_NAME}})", "starters": ["{{TARGET_LANG_NAME}} sentence starter..."] }
 
-tf  (true/false/not mentioned)
-{ "title": "({{INSTRUCTION_LANG_NAME}})", "instruction": "({{INSTRUCTION_LANG_NAME}})", "items": [{ "statement": "{{TARGET_LANG_NAME}} statement", "answer": "T|F|NM", "explanation": "{{INSTRUCTION_LANG_NAME}}" }] }
+tf  (mode "tf" = true/false, "tfn" = true/false/not given; answer "N" only in "tfn")
+{ "title": "({{INSTRUCTION_LANG_NAME}})", "instruction": "({{INSTRUCTION_LANG_NAME}})", "mode": "tf|tfn", "items": [{ "statement": "{{TARGET_LANG_NAME}} statement", "answer": "T|F|N", "explanation": "{{INSTRUCTION_LANG_NAME}}" }] }
 
 vic  (vocabulary in context)
-{ "title": "({{INSTRUCTION_LANG_NAME}})", "instruction": "({{INSTRUCTION_LANG_NAME}})", "items": [{ "sentence": "{{TARGET_LANG_NAME}} sentence with target word", "question": "{{INSTRUCTION_LANG_NAME}}", "options": ["opt1","opt2","opt3","opt4"], "correct": 0, "explanation": "{{INSTRUCTION_LANG_NAME}}" }] }
+{ "title": "({{INSTRUCTION_LANG_NAME}})", "instruction": "({{INSTRUCTION_LANG_NAME}})", "items": [{ "word": "{{TARGET_LANG_NAME}} target word", "sentence": "{{TARGET_LANG_NAME}} sentence using the word", "options": ["opt1","opt2","opt3","opt4"], "answer": "correct option (must match one of options exactly)", "explanation": "{{INSTRUCTION_LANG_NAME}}" }] }
 
 openq  (open questions)
-{ "title": "({{INSTRUCTION_LANG_NAME}})", "instruction": "({{INSTRUCTION_LANG_NAME}})", "items": [{ "q": "{{INSTRUCTION_LANG_NAME}} question", "hint": "optional hint" }] }
+{ "title": "({{INSTRUCTION_LANG_NAME}})", "instruction": "({{INSTRUCTION_LANG_NAME}})", "questions": [{ "question": "{{INSTRUCTION_LANG_NAME}} question", "hint": "optional hint" }] }
 
 scramble  (word order)
 { "title": "({{INSTRUCTION_LANG_NAME}})", "instruction": "({{INSTRUCTION_LANG_NAME}})", "items": [{ "sentence": "{{TARGET_LANG_NAME}} sentence to unscramble", "context": "optional context in {{INSTRUCTION_LANG_NAME}}" }] }
@@ -2533,14 +2536,11 @@ scramble  (word order)
 vocab-mcq
 { "title": "({{INSTRUCTION_LANG_NAME}})", "instruction": "({{INSTRUCTION_LANG_NAME}})", "questions": [{ "sentence": "{{TARGET_LANG_NAME}} sentence with ___", "options": ["opt1","opt2","opt3","opt4"], "answer": "correct", "explanation": "{{INSTRUCTION_LANG_NAME}}" }] }
 
-vocab-sentcomp
-{ "title": "({{INSTRUCTION_LANG_NAME}})", "instruction": "({{INSTRUCTION_LANG_NAME}})", "starters": ["{{TARGET_LANG_NAME}} sentence starter..."] }
+single-choice  (one question, exactly one item has "correct": true)
+{ "title": "({{INSTRUCTION_LANG_NAME}})", "question": "question in {{TARGET_LANG_NAME}}", "items": [{ "text": "option", "correct": true }, { "text": "option", "correct": false }], "explanation": "{{INSTRUCTION_LANG_NAME}}" }
 
-vocab-scramble
-{ "title": "({{INSTRUCTION_LANG_NAME}})", "instruction": "({{INSTRUCTION_LANG_NAME}})", "items": [{ "sentence": "{{TARGET_LANG_NAME}} words to unscramble", "context": "{{INSTRUCTION_LANG_NAME}} (optional)" }] }
-
-vocab-discussion
-{ "title": "({{INSTRUCTION_LANG_NAME}})", "instruction": "({{INSTRUCTION_LANG_NAME}})", "questions": [{ "q": "{{INSTRUCTION_LANG_NAME}} discussion question", "hint": "optional" }] }
+multi-choice  (one question, one or more items have "correct": true)
+{ "title": "({{INSTRUCTION_LANG_NAME}})", "question": "question in {{TARGET_LANG_NAME}}", "items": [{ "text": "option", "correct": true }, { "text": "option", "correct": false }], "explanation": "{{INSTRUCTION_LANG_NAME}}" }
 
 collocations
 { "title": "({{INSTRUCTION_LANG_NAME}})", "instruction": "({{INSTRUCTION_LANG_NAME}})", "blocks": [{ "keyword": "{{TARGET_LANG_NAME}} keyword", "instruction": "{{INSTRUCTION_LANG_NAME}}", "options": [{ "word": "{{TARGET_LANG_NAME}}", "correct": true }], "note": "{{INSTRUCTION_LANG_NAME}} note" }] }

@@ -147,21 +147,18 @@ async function loadStudent(code) {
   if (OWL.Offline.isOnline()) {
     OWL.Offline.saveStudent(found);
 
-    // Update streak
-    const today = new Date().toISOString().slice(0, 10);
-    const last  = found.last_active;
-    let streak  = found.streak_days || 0;
-    if (last !== today) {
-      const yesterday = new Date();
-      yesterday.setDate(yesterday.getDate() - 1);
-      const yday = yesterday.toISOString().slice(0, 10);
-      if (last === yday) streak++;
-      else if (!last || last < yday) streak = 1;
-      try {
-        await sb.from('students').update({ last_active: today, streak_days: streak }).eq('id', found.id);
-      } catch {}
+    // Update streak — computed server-side (db/student-checkin.sql); anon has no UPDATE on students
+    try {
+      const { data, error } = await sb.rpc('student_checkin', { p_student_id: found.id, p_code: found.code });
+      if (error) throw error;
+      const row = (data || [])[0];
+      if (row) {
+        found.streak_days = row.streak_days;
+        found.last_active = row.last_active;
+      }
+    } catch (e) {
+      console.warn('[OWL] student_checkin failed:', e);
     }
-    found.streak_days = streak;
   } else {
     OWL.Offline.updateBanner();
   }

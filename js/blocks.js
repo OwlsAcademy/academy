@@ -1500,10 +1500,12 @@ OWL.Blocks = (function () {
     (d.items || []).forEach((item, idx) => {
       const div = el('div', '');
       div.style.cssText = 'margin-bottom:18px;';
-      const wordEl = el('strong', '', item.word + ': ');
-      wordEl.style.color = 'var(--amber)';
       const sentEl = el('p', '');
-      sentEl.appendChild(wordEl);
+      if (item.word) {
+        const wordEl = el('strong', '', item.word + ': ');
+        wordEl.style.color = 'var(--amber)';
+        sentEl.appendChild(wordEl);
+      }
       sentEl.appendChild(document.createTextNode(item.sentence));
       sentEl.style.cssText = 'font-size:.93rem;margin-bottom:8px;';
       div.appendChild(sentEl);
@@ -1658,106 +1660,6 @@ OWL.Blocks = (function () {
       }
 
       c.appendChild(div);
-    });
-    return wrap(c);
-  }
-
-  // ─── VOCAB-SENTCOMP (V1 legacy) ──────────────────────────────────────────────
-
-  function renderVocabSentcomp(block, opts) {
-    const d = block.data;
-    const c = card();
-    if (d.title) c.appendChild(blockTitle(d.title));
-    if (d.instruction) c.appendChild(instrBanner(d.instruction));
-    (d.starters || d.items || []).forEach((s, i) => {
-      const starter = typeof s === 'string' ? s : (s.starter || s.sentence || '');
-      const row = el('div', '');
-      row.style.cssText = 'margin-bottom:12px;';
-      const lbl = el('p', '', (i + 1) + '. ' + starter);
-      lbl.style.cssText = 'font-size:.93rem;font-weight:600;color:var(--amber);margin-bottom:6px;';
-      const ta = document.createElement('textarea');
-      ta.className = 'write-box'; ta.rows = 2; ta.style.minHeight = '44px';
-      ta.placeholder = 'Complete the sentence…';
-      row.appendChild(lbl); row.appendChild(ta);
-      c.appendChild(row);
-    });
-    return wrap(c);
-  }
-
-  // ─── VOCAB-SCRAMBLE (V1 legacy) ──────────────────────────────────────────────
-
-  function renderVocabScramble(block, opts) {
-    const d = block.data;
-    const c = card();
-    if (d.title) c.appendChild(blockTitle(d.title));
-    if (d.instruction) c.appendChild(instrBanner(d.instruction));
-    (d.items || []).forEach((item, i) => {
-      const sentence = typeof item === 'string' ? item : (item.sentence || '');
-      const context  = typeof item === 'object' ? (item.context || '') : '';
-      const words    = sentence.trim().split(/\s+/);
-      const shuffled = [...words].sort(() => Math.random() - 0.5);
-      const uid2     = 'scr_' + block.id + '_' + i;
-      const state    = { words, shuffled, userAnswer: [] };
-
-      const wrap2 = el('div', '');
-      wrap2.style.cssText = 'background:var(--cream-dark);border-radius:10px;padding:14px;margin-bottom:12px;';
-      if (context) { const ctx = el('div', '', context); ctx.style.cssText = 'font-size:.72rem;color:var(--ink-60);margin-bottom:6px;font-family:monospace;'; wrap2.appendChild(ctx); }
-
-      const ansEl = el('div', ''); ansEl.id = uid2 + '_a';
-      ansEl.style.cssText = 'min-height:36px;border:2px dashed var(--border);border-radius:8px;padding:6px 10px;margin-bottom:8px;display:flex;flex-wrap:wrap;gap:6px;font-size:.9rem;';
-      const wbEl  = el('div', ''); wbEl.id  = uid2 + '_w';
-      wbEl.style.cssText = 'display:flex;flex-wrap:wrap;gap:6px;';
-      wrap2.appendChild(ansEl); wrap2.appendChild(wbEl);
-
-      function renderWords() {
-        wbEl.innerHTML = ''; ansEl.innerHTML = '';
-        state.shuffled.forEach((w, wi) => {
-          const used = state.userAnswer.some(a => a.wi === wi);
-          const btn = el('button', '', w);
-          btn.style.cssText = 'padding:4px 10px;border-radius:6px;border:1.5px solid var(--border);background:' + (used ? 'var(--cream)' : 'white') + ';cursor:' + (used ? 'default' : 'pointer') + ';font-size:.88rem;color:' + (used ? 'var(--ink-40)' : 'var(--ink)') + ';';
-          if (!used) btn.addEventListener('click', () => { state.userAnswer.push({wi, word: w}); renderWords(); });
-          wbEl.appendChild(btn);
-        });
-        state.userAnswer.forEach((aw, ai) => {
-          const ww = el('span', '', aw.word);
-          ww.style.cssText = 'padding:4px 10px;background:var(--amber-light);border-radius:6px;font-size:.88rem;cursor:pointer;';
-          ww.addEventListener('click', () => { state.userAnswer.splice(ai, 1); renderWords(); });
-          ansEl.appendChild(ww);
-        });
-      }
-      renderWords();
-
-      const chk = el('button', 'save-btn', 'Sprawdź'); chk.style.marginTop = '8px';
-      const fb = feedbackEl();
-      chk.addEventListener('click', () => {
-        const ans = state.userAnswer.map(a => a.word).join(' ');
-        showFeedback(fb, ans === sentence, ans === sentence ? 'Poprawnie!' : 'Właściwa odpowiedź: ' + sentence);
-      });
-      wrap2.appendChild(chk); wrap2.appendChild(fb);
-      c.appendChild(wrap2);
-    });
-    return wrap(c);
-  }
-
-  // ─── VOCAB-DISCUSSION (V1 legacy) ────────────────────────────────────────────
-
-  function renderVocabDiscussion(block, opts) {
-    const d = block.data;
-    const c = card('yellow');
-    if (d.title) c.appendChild(blockTitle(d.title));
-    (d.questions || []).forEach((q, i) => {
-      const qText = typeof q === 'string' ? q : (q.q || q.text || '');
-      const qHint = typeof q === 'object' ? (q.hint || '') : '';
-      const row = el('div', '');
-      row.style.cssText = 'display:flex;align-items:flex-start;gap:10px;margin-bottom:12px;';
-      const num = el('span', '', String(i + 1));
-      num.style.cssText = 'width:24px;height:24px;min-width:24px;background:var(--amber);color:var(--ink);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.78rem;font-weight:700;flex-shrink:0;margin-top:2px;';
-      const inner = el('div', '');
-      inner.style.cssText = 'font-size:.93rem;line-height:1.55;';
-      inner.textContent = qText;
-      if (qHint) { const h = el('div', '', qHint); h.style.cssText = 'font-size:.8rem;color:var(--ink-60);margin-top:2px;font-style:italic;'; inner.appendChild(h); }
-      row.appendChild(num); row.appendChild(inner);
-      c.appendChild(row);
     });
     return wrap(c);
   }
@@ -2483,10 +2385,93 @@ OWL.Blocks = (function () {
     return (m > 0 ? String(m) + ':' : '') + (s < 10 ? '0' : '') + String(s);
   }
 
+  // ─── DATA NORMALIZATION ──────────────────────────────────────────────────────
+  // Maps V1-legacy block types and older AI-prompt data shapes onto what the
+  // renderers and admin editors read. Pure and idempotent: returns a new block
+  // (same id, so saved progress still matches) and never mutates the input.
+
+  const LEGACY_TYPES = {
+    'vocab-sentcomp':   'sentcomp',
+    'vocab-scramble':   'scramble',
+    'vocab-discussion': 'discussion'
+  };
+
+  const TF_ANSWERS = { TRUE: 'T', FALSE: 'F', NM: 'N', NG: 'N', 'NOT GIVEN': 'N', 'NOT MENTIONED': 'N' };
+
+  function normalize(block) {
+    if (!block || typeof block !== 'object') return block;
+    let type = (block.type || '').toLowerCase();
+    const d = Object.assign({}, block.data || {});
+
+    if (LEGACY_TYPES[type]) type = LEGACY_TYPES[type];
+
+    switch (type) {
+      case 'sentcomp':
+        if (!Array.isArray(d.starters) && Array.isArray(d.items)) {
+          d.starters = d.items.map(s => typeof s === 'string' ? s : (s.starter || s.sentence || ''));
+          delete d.items;
+        }
+        break;
+
+      case 'scramble':
+        d.items = (d.items || []).map(it => typeof it === 'string'
+          ? { sentence: it, context: '' }
+          : Object.assign({}, it, { sentence: it.sentence || '' }));
+        break;
+
+      case 'discussion':
+        if (!d.description && d.instruction) { d.description = d.instruction; delete d.instruction; }
+        d.questions = (d.questions || []).map(q => {
+          if (typeof q === 'string') return q;
+          const text = q.q || q.text || q.question || '';
+          return q.hint ? text + ' (' + q.hint + ')' : text;
+        });
+        break;
+
+      case 'tf':
+        d.items = (d.items || []).map(it => {
+          const a = String(it.answer == null ? '' : it.answer).trim().toUpperCase();
+          return Object.assign({}, it, { answer: TF_ANSWERS[a] || a });
+        });
+        break;
+
+      case 'vic':
+        d.items = (d.items || []).map(it => {
+          const opts = it.options || [];
+          if (it.answer == null && typeof it.correct === 'number') {
+            it = Object.assign({}, it, { answer: opts[it.correct] || '' });
+          }
+          return it;
+        });
+        break;
+
+      case 'errorcorrect':
+        d.items = (d.items || []).map(it => {
+          if (it.answer || !it.correction) return it;
+          const s = it.sentence || '';
+          const fixed = it.error && s.includes(it.error) ? s.replace(it.error, it.correction) : it.correction;
+          return Object.assign({}, it, { answer: fixed });
+        });
+        break;
+
+      case 'openq':
+        if (!Array.isArray(d.questions) && Array.isArray(d.items)) {
+          d.questions = d.items.map(q => typeof q === 'string'
+            ? { question: q, hint: '' }
+            : { question: q.question || q.q || '', hint: q.hint || '' });
+          delete d.items;
+        }
+        break;
+    }
+
+    return Object.assign({}, block, { type, data: d });
+  }
+
   // ─── MAIN RENDER FUNCTION ────────────────────────────────────────────────────
 
   function render(block, opts) {
     opts = opts || {};
+    block = normalize(block);
     const type = (block.type || '').toLowerCase();
     try {
       switch (type) {
@@ -2528,9 +2513,6 @@ OWL.Blocks = (function () {
         case 'openq':          return renderOpenq(block, opts);
         case 'sentcomp':       return renderSentcomp(block, opts);
         case 'vocab-mcq':        return renderVocabMcq(block, opts);
-        case 'vocab-sentcomp':   return renderVocabSentcomp(block, opts);
-        case 'vocab-scramble':   return renderVocabScramble(block, opts);
-        case 'vocab-discussion': return renderVocabDiscussion(block, opts);
         // Flashcards
         case 'flashcards':     return renderFlashcards(block, opts);
         // Speaking
@@ -2564,5 +2546,5 @@ OWL.Blocks = (function () {
     }
   }
 
-  return { render };
+  return { render, normalize };
 })();
